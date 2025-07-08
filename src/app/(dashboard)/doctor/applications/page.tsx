@@ -1,0 +1,364 @@
+"use client";
+
+import { useState } from "react";
+import { api } from "~/trpc/react";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Badge } from "~/components/ui/badge";
+import { Separator } from "~/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import {
+  Calendar,
+  MapPin,
+  DollarSign,
+  Users,
+  Clock,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Send,
+  Building2,
+} from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+export default function DoctorApplicationsPage() {
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  // Fetch doctor applications
+  const {
+    data: applications,
+    isLoading,
+    refetch,
+  } = api.applications.getByDoctor.useQuery({
+    status: statusFilter as
+      | "SENT"
+      | "VIEWED"
+      | "ACCEPTED"
+      | "REJECTED"
+      | undefined,
+    limit,
+    offset: (page - 1) * limit,
+  });
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "SENT":
+        return "default";
+      case "VIEWED":
+        return "secondary";
+      case "ACCEPTED":
+        return "default";
+      case "REJECTED":
+        return "destructive";
+      default:
+        return "default";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "SENT":
+        return "Envoyée";
+      case "VIEWED":
+        return "Vue";
+      case "ACCEPTED":
+        return "Acceptée";
+      case "REJECTED":
+        return "Refusée";
+      default:
+        return status;
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "SENT":
+        return <Send className="w-4 h-4" />;
+      case "VIEWED":
+        return <Eye className="w-4 h-4" />;
+      case "ACCEPTED":
+        return <CheckCircle className="w-4 h-4" />;
+      case "REJECTED":
+        return <XCircle className="w-4 h-4" />;
+      default:
+        return <Send className="w-4 h-4" />;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "URGENT":
+        return "destructive";
+      case "RECURRING":
+        return "secondary";
+      case "PLANNED":
+        return "default";
+      default:
+        return "default";
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case "URGENT":
+        return "Urgent";
+      case "RECURRING":
+        return "Récurrent";
+      case "PLANNED":
+        return "Planifié";
+      default:
+        return type;
+    }
+  };
+
+  return (
+    <div className="container max-w-6xl mx-auto py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Mes candidatures
+          </h1>
+          <p className="text-muted-foreground">
+            Suivez le statut de vos candidatures aux annonces de remplacement
+          </p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">Statut :</span>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Tous les statuts" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Tous les statuts</SelectItem>
+              <SelectItem value="SENT">Envoyées</SelectItem>
+              <SelectItem value="VIEWED">Vues</SelectItem>
+              <SelectItem value="ACCEPTED">Acceptées</SelectItem>
+              <SelectItem value="REJECTED">Refusées</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Applications List */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">
+              Chargement des candidatures...
+            </p>
+          </div>
+        </div>
+      ) : applications?.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Send className="w-12 h-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">Aucune candidature</h3>
+            <p className="text-muted-foreground text-center">
+              Vous n'avez encore envoyé aucune candidature.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {applications?.map((application) => (
+            <Card
+              key={application.id}
+              className="hover:shadow-md transition-shadow"
+            >
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <CardTitle className="text-lg">
+                        {application.jobOffer.title}
+                      </CardTitle>
+                      <Badge variant={getTypeColor(application.jobOffer.type)}>
+                        {getTypeLabel(application.jobOffer.type)}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Building2 className="w-4 h-4" />
+                        {application.jobOffer.cabinet.cabinetName}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4" />
+                        {application.jobOffer.location}
+                      </div>
+                    </div>
+                  </div>
+                  <Badge
+                    variant={getStatusColor(application.status)}
+                    className="flex items-center gap-1"
+                  >
+                    {getStatusIcon(application.status)}
+                    {getStatusLabel(application.status)}
+                  </Badge>
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-4">
+                {/* Job Details */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Début</p>
+                      <p className="text-muted-foreground">
+                        {format(
+                          new Date(application.jobOffer.startDate),
+                          "d MMM yyyy",
+                          { locale: fr }
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Fin</p>
+                      <p className="text-muted-foreground">
+                        {format(
+                          new Date(application.jobOffer.endDate),
+                          "d MMM yyyy",
+                          { locale: fr }
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Rétrocession</p>
+                      <p className="text-muted-foreground">
+                        {application.jobOffer.retrocessionRate}%
+                      </p>
+                    </div>
+                  </div>
+                  {application.jobOffer.estimatedPatients && (
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">Patients/jour</p>
+                        <p className="text-muted-foreground">
+                          ~{application.jobOffer.estimatedPatients}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Application Details */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Candidature envoyée le{" "}
+                      {format(
+                        new Date(application.createdAt),
+                        "d MMM yyyy à HH:mm",
+                        { locale: fr }
+                      )}
+                    </span>
+                    {application.updatedAt &&
+                      application.updatedAt !== application.createdAt && (
+                        <span className="text-muted-foreground">
+                          Mise à jour le{" "}
+                          {format(
+                            new Date(application.updatedAt),
+                            "d MMM yyyy à HH:mm",
+                            { locale: fr }
+                          )}
+                        </span>
+                      )}
+                  </div>
+
+                  {/* Motivation Letter Preview */}
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <h4 className="text-sm font-medium mb-2">
+                      Lettre de motivation :
+                    </h4>
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {application.motivationLetter}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status-specific content */}
+                {application.status === "ACCEPTED" && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-green-800">
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="font-medium">
+                        Candidature acceptée !
+                      </span>
+                    </div>
+                    <p className="text-sm text-green-700 mt-1">
+                      Le cabinet va vous contacter prochainement pour finaliser
+                      les modalités du remplacement.
+                    </p>
+                  </div>
+                )}
+
+                {application.status === "REJECTED" && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-red-800">
+                      <XCircle className="w-5 h-5" />
+                      <span className="font-medium">Candidature refusée</span>
+                    </div>
+                    <p className="text-sm text-red-700 mt-1">
+                      Cette candidature n'a pas été retenue pour cette offre.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+
+          {/* Pagination */}
+          {applications && applications.length === limit && (
+            <div className="flex justify-center mt-8">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Précédent
+                </Button>
+                <span className="text-sm text-muted-foreground px-4">
+                  Page {page}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={applications.length < limit}
+                >
+                  Suivant
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
