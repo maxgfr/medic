@@ -1,6 +1,20 @@
 import { z } from "zod";
-import { eq, desc, and, gte, lte, ilike, sql } from "drizzle-orm";
-import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import {
+  eq,
+  desc,
+  and,
+  gte,
+  lte,
+  ilike,
+  sql,
+  inArray,
+  type SQL,
+} from "drizzle-orm";
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from "~/server/api/trpc";
 import {
   jobOffers,
   cabinetProfiles,
@@ -16,6 +30,67 @@ import {
 import { TRPCError } from "@trpc/server";
 
 export const jobOffersRouter = createTRPCRouter({
+  // Get public job offers for homepage (no auth required)
+  getPublic: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(20).default(6),
+        specialties: z.array(z.string()).optional(),
+        location: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const whereConditions: SQL[] = [
+        eq(jobOffers.status, "PUBLISHED"),
+        gte(jobOffers.endDate, new Date()), // Only future jobs
+      ];
+
+      if (input.specialties && input.specialties.length > 0) {
+        whereConditions.push(
+          inArray(
+            jobOffers.specialty,
+            input.specialties as import("~/types").MedicalSpecialty[]
+          )
+        );
+      }
+
+      if (input.location) {
+        whereConditions.push(ilike(jobOffers.location, `%${input.location}%`));
+      }
+
+      const offers = await ctx.db.query.jobOffers.findMany({
+        where: and(...whereConditions),
+        with: {
+          cabinet: {
+            with: {
+              user: true,
+            },
+          },
+        },
+        orderBy: [desc(jobOffers.createdAt)],
+        limit: input.limit,
+      });
+
+      // Return only safe public data
+      return offers.map((offer) => ({
+        id: offer.id,
+        title: offer.title,
+        specialty: offer.specialty,
+        location: offer.location,
+        startDate: offer.startDate,
+        endDate: offer.endDate,
+        type: offer.type,
+        description: offer.description,
+        estimatedPatients: offer.estimatedPatients,
+        housingProvided: offer.housingProvided,
+        createdAt: offer.createdAt,
+        cabinet: {
+          cabinetName: offer.cabinet.cabinetName,
+          // Don't expose sensitive cabinet details
+        },
+      }));
+    }),
+
   // Create a new job offer (Cabinet only)
   create: protectedProcedure
     .input(jobOfferSchema)

@@ -41,6 +41,10 @@ import {
   CheckCircle,
   XCircle,
   Info,
+  Briefcase,
+  Send,
+  Users,
+  LogIn,
   type LucideIcon,
 } from "lucide-react";
 
@@ -89,6 +93,10 @@ export const Icons = {
   checkCircle: CheckCircle,
   xCircle: XCircle,
   info: Info,
+  briefcase: Briefcase,
+  send: Send,
+  users: Users,
+  logIn: LogIn,
   google: ({ ...props }) => (
     <svg role="img" viewBox="0 0 24 24" {...props}>
       <title>Google</title>
