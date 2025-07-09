@@ -13,6 +13,12 @@ import {
   real,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccount } from "next-auth/adapters";
+import type {
+  MedicalSpecialty,
+  PreferredLocation,
+  GeneralAvailability,
+  SpecificAvailability,
+} from "~/types";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -22,27 +28,6 @@ import type { AdapterAccount } from "next-auth/adapters";
  */
 export const createTable = pgTableCreator((name) => `medic_${name}`);
 
-export const posts = createTable(
-  "post",
-  (d) => ({
-    id: d.integer().primaryKey().generatedByDefaultAsIdentity(),
-    name: d.varchar({ length: 256 }),
-    createdById: d
-      .varchar({ length: 255 })
-      .notNull()
-      .references(() => users.id),
-    createdAt: d
-      .timestamp({ withTimezone: true })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
-  }),
-  (t) => [
-    index("created_by_idx").on(t.createdById),
-    index("name_idx").on(t.name),
-  ]
-);
-
 export const users = createTable("user", (d) => ({
   id: d
     .varchar({ length: 255 })
@@ -50,7 +35,7 @@ export const users = createTable("user", (d) => ({
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: d.varchar({ length: 255 }),
-  email: d.varchar({ length: 255 }).notNull(),
+  email: d.varchar({ length: 255 }).notNull().unique(),
   emailVerified: d
     .timestamp({
       mode: "date",
@@ -58,27 +43,13 @@ export const users = createTable("user", (d) => ({
     })
     .default(sql`CURRENT_TIMESTAMP`),
   image: d.varchar({ length: 255 }),
+  password: d.varchar({ length: 255 }), // Hash du mot de passe
   role: d.varchar({ length: 20 }).$type<"CABINET" | "DOCTOR">().notNull(),
   createdAt: d
     .timestamp({ withTimezone: true })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
   updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
-}));
-
-export const usersRelations = relations(users, ({ many, one }) => ({
-  accounts: many(accounts),
-  cabinetProfile: one(cabinetProfiles),
-  doctorProfile: one(doctorProfiles),
-  sentMessages: many(messages),
-  jobOffers: many(jobOffers),
-  applications: many(applications),
-  cabinetConversations: many(conversations, {
-    relationName: "cabinetConversations",
-  }),
-  doctorConversations: many(conversations, {
-    relationName: "doctorConversations",
-  }),
 }));
 
 export const accounts = createTable(
@@ -105,10 +76,6 @@ export const accounts = createTable(
   ]
 );
 
-export const accountsRelations = relations(accounts, ({ one }) => ({
-  user: one(users, { fields: [accounts.userId], references: [users.id] }),
-}));
-
 export const sessions = createTable(
   "session",
   (d) => ({
@@ -121,10 +88,6 @@ export const sessions = createTable(
   }),
   (t) => [index("t_user_id_idx").on(t.userId)]
 );
-
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-  user: one(users, { fields: [sessions.userId], references: [users.id] }),
-}));
 
 export const verificationTokens = createTable(
   "verification_token",
@@ -194,21 +157,10 @@ export const doctorProfiles = createTable("doctor_profile", (d) => ({
   lastName: d.varchar({ length: 255 }).notNull(),
   specialties: d.json().$type<string[]>().notNull(),
   experienceYears: d.integer().notNull(),
-  preferredLocation: d.varchar({ length: 255 }).notNull(),
-  travelRadius: d.integer().notNull(), // in kilometers
+  preferredLocations: d.json().$type<PreferredLocation[]>().notNull(),
   documents: d.json().$type<string[]>().default([]),
-  availability: d
-    .json()
-    .$type<{
-      monday: boolean;
-      tuesday: boolean;
-      wednesday: boolean;
-      thursday: boolean;
-      friday: boolean;
-      saturday: boolean;
-      sunday: boolean;
-    }>()
-    .notNull(),
+  generalAvailability: d.json().$type<GeneralAvailability>().notNull(),
+  specificAvailabilities: d.json().$type<SpecificAvailability[]>().default([]),
   preferredRate: d.numeric({ precision: 10, scale: 2 }),
   createdAt: d
     .timestamp({ withTimezone: true })
@@ -231,7 +183,7 @@ export const jobOffers = createTable(
       .notNull()
       .references(() => cabinetProfiles.id),
     title: d.varchar({ length: 255 }).notNull(),
-    specialty: d.varchar({ length: 255 }).notNull(),
+    specialty: d.varchar({ length: 255 }).$type<MedicalSpecialty>().notNull(),
     location: d.text().notNull(),
     latitude: d.real(),
     longitude: d.real(),
@@ -374,7 +326,69 @@ export const messages = createTable(
   ]
 );
 
+// Notifications table
+export const notifications = createTable(
+  "notification",
+  (d) => ({
+    id: d
+      .varchar({ length: 255 })
+      .notNull()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    recipientId: d.varchar({ length: 255 }).notNull(),
+    type: d
+      .varchar({ length: 50 })
+      .$type<
+        | "NEW_APPLICATION"
+        | "APPLICATION_ACCEPTED"
+        | "APPLICATION_REJECTED"
+        | "NEW_MESSAGE"
+        | "NEW_JOB_OFFER"
+        | "JOB_OFFER_UPDATED"
+        | "PROFILE_INCOMPLETE"
+      >()
+      .notNull(),
+    title: d.varchar({ length: 255 }).notNull(),
+    message: d.text().notNull(),
+    data: d.json().default({}),
+    isRead: d.boolean().default(false),
+    readAt: d.timestamp({ withTimezone: true }),
+    createdAt: d
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  }),
+  (t) => [
+    index("notification_recipient_id_idx").on(t.recipientId),
+    index("notification_is_read_idx").on(t.isRead),
+    index("notification_created_at_idx").on(t.createdAt),
+  ]
+);
+
 // Relations
+export const usersRelations = relations(users, ({ many, one }) => ({
+  accounts: many(accounts),
+  cabinetProfile: one(cabinetProfiles),
+  doctorProfile: one(doctorProfiles),
+  sentMessages: many(messages),
+  jobOffers: many(jobOffers),
+  applications: many(applications),
+  cabinetConversations: many(conversations, {
+    relationName: "cabinetConversations",
+  }),
+  doctorConversations: many(conversations, {
+    relationName: "doctorConversations",
+  }),
+}));
+
+export const accountsRelations = relations(accounts, ({ one }) => ({
+  user: one(users, { fields: [accounts.userId], references: [users.id] }),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, { fields: [sessions.userId], references: [users.id] }),
+}));
+
 export const specialtiesRelations = relations(specialties, () => ({}));
 
 export const cabinetProfilesRelations = relations(
@@ -449,44 +463,5 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
   sender: one(users, { fields: [messages.senderId], references: [users.id] }),
 }));
-
-// Notifications table
-export const notifications = createTable(
-  "notification",
-  (d) => ({
-    id: d
-      .varchar({ length: 255 })
-      .notNull()
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    recipientId: d.varchar({ length: 255 }).notNull(),
-    type: d
-      .varchar({ length: 50 })
-      .$type<
-        | "NEW_APPLICATION"
-        | "APPLICATION_ACCEPTED"
-        | "APPLICATION_REJECTED"
-        | "NEW_MESSAGE"
-        | "NEW_JOB_OFFER"
-        | "JOB_OFFER_UPDATED"
-        | "PROFILE_INCOMPLETE"
-      >()
-      .notNull(),
-    title: d.varchar({ length: 255 }).notNull(),
-    message: d.text().notNull(),
-    data: d.json().default({}),
-    isRead: d.boolean().default(false),
-    readAt: d.timestamp({ withTimezone: true }),
-    createdAt: d
-      .timestamp({ withTimezone: true })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-  }),
-  (t) => [
-    index("notification_recipient_id_idx").on(t.recipientId),
-    index("notification_is_read_idx").on(t.isRead),
-    index("notification_created_at_idx").on(t.createdAt),
-  ]
-);
 
 export const notificationsRelations = relations(notifications, () => ({}));

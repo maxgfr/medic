@@ -17,66 +17,131 @@ export const USER_ROLES = [
 // Medical specialties
 export const MEDICAL_SPECIALTIES = [
   {
-    id: "medecine-generale",
+    id: "MEDECINE_GENERALE",
     name: "Médecine générale",
     category: "Médecine générale",
   },
-  { id: "cardiologie", name: "Cardiologie", category: "Spécialités médicales" },
+  { id: "CARDIOLOGIE", name: "Cardiologie", category: "Spécialités médicales" },
   {
-    id: "dermatologie",
+    id: "DERMATOLOGIE",
     name: "Dermatologie",
     category: "Spécialités médicales",
   },
-  { id: "pediatrie", name: "Pédiatrie", category: "Spécialités médicales" },
-  { id: "gynecologie", name: "Gynécologie", category: "Spécialités médicales" },
+  { id: "PEDIATRIE", name: "Pédiatrie", category: "Spécialités médicales" },
+  { id: "GYNECOLOGIE", name: "Gynécologie", category: "Spécialités médicales" },
   {
-    id: "ophtalmologie",
+    id: "OPHTALMOLOGIE",
     name: "Ophtalmologie",
     category: "Spécialités médicales",
   },
-  { id: "psychiatrie", name: "Psychiatrie", category: "Spécialités médicales" },
-  { id: "radiologie", name: "Radiologie", category: "Spécialités médicales" },
-  { id: "neurologie", name: "Neurologie", category: "Spécialités médicales" },
+  { id: "PSYCHIATRIE", name: "Psychiatrie", category: "Spécialités médicales" },
+  { id: "RADIOLOGIE", name: "Radiologie", category: "Spécialités techniques" },
+  { id: "NEUROLOGIE", name: "Neurologie", category: "Spécialités médicales" },
   {
-    id: "gastroenterologie",
-    name: "Gastroentérologie",
+    id: "GASTRO_ENTEROLOGIE",
+    name: "Gastro-entérologie",
     category: "Spécialités médicales",
   },
-  { id: "pneumologie", name: "Pneumologie", category: "Spécialités médicales" },
+  { id: "PNEUMOLOGIE", name: "Pneumologie", category: "Spécialités médicales" },
   {
-    id: "rhumatologie",
+    id: "RHUMATOLOGIE",
     name: "Rhumatologie",
     category: "Spécialités médicales",
   },
   {
-    id: "endocrinologie",
+    id: "ENDOCRINOLOGIE",
     name: "Endocrinologie",
     category: "Spécialités médicales",
   },
-  { id: "urologie", name: "Urologie", category: "Spécialités chirurgicales" },
-  { id: "orl", name: "ORL", category: "Spécialités chirurgicales" },
+  { id: "UROLOGIE", name: "Urologie", category: "Spécialités chirurgicales" },
+  { id: "ORL", name: "ORL", category: "Spécialités chirurgicales" },
   {
-    id: "chirurgie-generale",
+    id: "CHIRURGIE_GENERALE",
     name: "Chirurgie générale",
     category: "Spécialités chirurgicales",
   },
   {
-    id: "anesthesie-reanimation",
+    id: "ANESTHESIE",
     name: "Anesthésie-Réanimation",
-    category: "Spécialités médicales",
+    category: "Spécialités chirurgicales",
   },
   {
-    id: "medecine-urgence",
+    id: "MEDECINE_URGENCE",
     name: "Médecine d'urgence",
-    category: "Spécialités médicales",
+    category: "Spécialités d'urgence",
   },
-  { id: "geriatrie", name: "Gériatrie", category: "Spécialités médicales" },
+  { id: "GERIATRIE", name: "Gériatrie", category: "Spécialités médicales" },
   {
-    id: "medecine-interne",
+    id: "MEDECINE_INTERNE",
     name: "Médecine interne",
     category: "Spécialités médicales",
   },
+  { id: "HEMATOLOGIE", name: "Hématologie", category: "Spécialités médicales" },
+  { id: "NEPHROLOGIE", name: "Néphrologie", category: "Spécialités médicales" },
+  { id: "ORTHOPEDYE", name: "Orthopédie", category: "Spécialités médicales" },
+  {
+    id: "CHIRURGIE_ORTHOPEDIQUE",
+    name: "Chirurgie orthopédique",
+    category: "Spécialités chirurgicales",
+  },
+  {
+    id: "CHIRURGIE_VASCULAIRE",
+    name: "Chirurgie vasculaire",
+    category: "Spécialités chirurgicales",
+  },
+  { id: "ONCOLOGIE", name: "Oncologie", category: "Spécialités médicales" },
+  {
+    id: "ADDICTOLOGIE",
+    name: "Addictologie",
+    category: "Spécialités médicales",
+  },
+  {
+    id: "MEDECINE_TRAVAIL",
+    name: "Médecine du travail",
+    category: "Médecine spécialisée",
+  },
+  {
+    id: "MEDECINE_SPORT",
+    name: "Médecine du sport",
+    category: "Médecine spécialisée",
+  },
 ] as const;
+
+// Helper function to get specialty options for forms
+export const getSpecialtyOptions = () => {
+  return MEDICAL_SPECIALTIES.map((specialty) => ({
+    value: specialty.id,
+    label: specialty.name,
+    category: specialty.category,
+  }));
+};
+
+// Helper function to get specialties by category
+export const getSpecialtiesByCategory = () => {
+  const categories: Record<
+    string,
+    Array<{ value: string; label: string }>
+  > = {};
+
+  for (const specialty of MEDICAL_SPECIALTIES) {
+    if (!categories[specialty.category]) {
+      categories[specialty.category] = [];
+    }
+    categories[specialty.category]?.push({
+      value: specialty.id,
+      label: specialty.name,
+    });
+  }
+
+  return categories;
+};
+
+// Helper function to get specialty name by ID
+export const getSpecialtyName = (id: string) => {
+  return (
+    MEDICAL_SPECIALTIES.find((specialty) => specialty.id === id)?.name || id
+  );
+};
 
 // Days of the week
 export const DAYS_OF_WEEK = [

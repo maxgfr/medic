@@ -290,7 +290,12 @@ export const jobOffersRouter = createTRPCRouter({
       ];
 
       if (input.specialty) {
-        whereConditions.push(eq(jobOffers.specialty, input.specialty));
+        whereConditions.push(
+          eq(
+            jobOffers.specialty,
+            input.specialty as import("~/types").MedicalSpecialty
+          )
+        );
       }
 
       if (input.location) {

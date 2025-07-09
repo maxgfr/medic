@@ -23,7 +23,8 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Icons } from "~/components/ui/icons";
-import { cabinetProfileSchema, type CabinetProfile } from "~/lib/validations";
+import { cabinetProfileSchema } from "~/lib/validations";
+import type { CabinetProfileFormData } from "~/types";
 import { MEDICAL_SPECIALTIES } from "~/lib/constants";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
@@ -31,7 +32,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 interface CabinetProfileFormProps {
-  initialData?: Partial<CabinetProfile>;
+  initialData?: Partial<CabinetProfileFormData>;
   isEditing?: boolean;
 }
 
@@ -42,7 +43,7 @@ export function CabinetProfileForm({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<CabinetProfile>({
+  const form = useForm<CabinetProfileFormData>({
     resolver: zodResolver(cabinetProfileSchema),
     defaultValues: {
       cabinetName: initialData?.cabinetName || "",
@@ -76,7 +77,7 @@ export function CabinetProfileForm({
     },
   });
 
-  function onSubmit(values: CabinetProfile) {
+  function onSubmit(values: CabinetProfileFormData) {
     setIsLoading(true);
 
     if (isEditing) {
@@ -210,7 +211,8 @@ export function CabinetProfileForm({
                                         ])
                                       : field.onChange(
                                           field.value?.filter(
-                                            (value) => value !== specialty.id
+                                            (value: string) =>
+                                              value !== specialty.id
                                           )
                                         );
                                   }}

@@ -2,6 +2,9 @@
 
 import { signIn, getProviders } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -10,9 +13,21 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "~/components/ui/form";
+import { Input } from "~/components/ui/input";
+import { Separator } from "~/components/ui/separator";
 import { Badge } from "~/components/ui/badge";
 import { Icons } from "~/components/ui/icons";
 import { USER_ROLES } from "~/lib/constants";
+import { registerSchema, type RegisterFormData } from "~/lib/validations";
+import { api } from "~/trpc/react";
 
 type Provider = {
   id: string;
@@ -31,6 +46,28 @@ export default function RegisterPage() {
   );
   const [isLoading, setIsLoading] = useState<string | null>(null);
 
+  const form = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      role: "DOCTOR",
+    },
+  });
+
+  const registerMutation = api.auth.register.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+      // Rediriger vers la page de connexion
+      window.location.href = "/login";
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   useEffect(() => {
     (async () => {
       const res = await getProviders();
@@ -38,7 +75,18 @@ export default function RegisterPage() {
     })();
   }, []);
 
-  const handleSignIn = async (providerId: string) => {
+  const onSubmit = async (values: RegisterFormData) => {
+    setIsLoading("credentials");
+    registerMutation.mutate({
+      name: values.name,
+      email: values.email,
+      password: values.password,
+      role: values.role,
+    });
+    setIsLoading(null);
+  };
+
+  const handleProviderSignIn = async (providerId: string) => {
     if (!selectedRole) return;
 
     setIsLoading(providerId);
@@ -110,33 +158,148 @@ export default function RegisterPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background px-2 text-muted-foreground">
-                  Continuer avec
+                  Créer un compte
                 </span>
               </div>
             </div>
 
+            {/* Formulaire d'inscription */}
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nom complet</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Jean Dupont" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="votre@email.com"
+                          type="email"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Mot de passe</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="••••••••"
+                          type="password"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirmer le mot de passe</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="••••••••"
+                          type="password"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem className="hidden">
+                      <Input
+                        type="hidden"
+                        {...field}
+                        value={selectedRole}
+                        onChange={() => field.onChange(selectedRole)}
+                      />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={
+                    isLoading === "credentials" || registerMutation.isPending
+                  }
+                >
+                  {(isLoading === "credentials" ||
+                    registerMutation.isPending) && (
+                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Créer mon compte
+                </Button>
+              </form>
+            </Form>
+
+            {/* Séparateur pour autres providers */}
+            {providers &&
+              Object.values(providers).some((p) => p.id !== "credentials") && (
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Ou continuer avec
+                    </span>
+                  </div>
+                </div>
+              )}
+
             {/* Providers d'authentification */}
             {providers &&
-              Object.values(providers).map((provider) => (
-                <Button
-                  key={provider.name}
-                  variant="outline"
-                  onClick={() => handleSignIn(provider.id)}
-                  disabled={isLoading === provider.id}
-                  className="w-full"
-                >
-                  {isLoading === provider.id ? (
-                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                  ) : provider.name === "Discord" ? (
-                    <Icons.discord className="mr-2 h-4 w-4" />
-                  ) : provider.name === "Google" ? (
-                    <Icons.google className="mr-2 h-4 w-4" />
-                  ) : (
-                    <Icons.user className="mr-2 h-4 w-4" />
-                  )}
-                  Créer un compte avec {provider.name}
-                </Button>
-              ))}
+              Object.values(providers)
+                .filter((provider) => provider.id !== "credentials")
+                .map((provider) => (
+                  <Button
+                    key={provider.name}
+                    variant="outline"
+                    onClick={() => handleProviderSignIn(provider.id)}
+                    disabled={isLoading === provider.id}
+                    className="w-full"
+                  >
+                    {isLoading === provider.id ? (
+                      <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                    ) : provider.name === "Google" ? (
+                      <Icons.google className="mr-2 h-4 w-4" />
+                    ) : (
+                      <Icons.user className="mr-2 h-4 w-4" />
+                    )}
+                    Créer un compte avec {provider.name}
+                  </Button>
+                ))}
           </>
         )}
 

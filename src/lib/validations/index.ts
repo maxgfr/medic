@@ -3,6 +3,44 @@ import { z } from "zod";
 // User role validation
 export const userRoleSchema = z.enum(["CABINET", "DOCTOR"]);
 
+// Authentication schemas
+export const loginSchema = z.object({
+  email: z.string().email("Email invalide"),
+  password: z
+    .string()
+    .min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+});
+
+export const registerBaseSchema = z.object({
+  name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  email: z.string().email("Email invalide"),
+  password: z
+    .string()
+    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      "Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre"
+    ),
+  confirmPassword: z.string(),
+  role: userRoleSchema,
+});
+
+export const registerSchema = registerBaseSchema.refine(
+  (data) => data.password === data.confirmPassword,
+  {
+    message: "Les mots de passe ne correspondent pas",
+    path: ["confirmPassword"],
+  }
+);
+
+export const registerApiSchema = registerBaseSchema.omit({
+  confirmPassword: true,
+});
+
+export type LoginFormData = z.infer<typeof loginSchema>;
+export type RegisterFormData = z.infer<typeof registerSchema>;
+export type RegisterApiData = z.infer<typeof registerApiSchema>;
+
 // Job offer type validation
 export const jobOfferTypeSchema = z.enum(["URGENT", "PLANNED", "RECURRING"]);
 
@@ -22,8 +60,41 @@ export const applicationStatusSchema = z.enum([
   "REJECTED",
 ]);
 
-// Availability schema
-export const availabilitySchema = z.object({
+// Medical specialty validation
+export const medicalSpecialtySchema = z.enum([
+  "MEDECINE_GENERALE",
+  "CARDIOLOGIE",
+  "DERMATOLOGIE",
+  "ENDOCRINOLOGIE",
+  "GASTRO_ENTEROLOGIE",
+  "GERIATRIE",
+  "GYNECOLOGIE",
+  "HEMATOLOGIE",
+  "NEPHROLOGIE",
+  "NEUROLOGIE",
+  "OPHTALMOLOGIE",
+  "ORL",
+  "ORTHOPEDYE",
+  "PEDIATRIE",
+  "PNEUMOLOGIE",
+  "PSYCHIATRIE",
+  "RADIOLOGIE",
+  "RHUMATOLOGIE",
+  "UROLOGIE",
+  "ANESTHESIE",
+  "CHIRURGIE_GENERALE",
+  "CHIRURGIE_ORTHOPEDIQUE",
+  "CHIRURGIE_VASCULAIRE",
+  "MEDECINE_URGENCE",
+  "MEDECINE_INTERNE",
+  "ONCOLOGIE",
+  "ADDICTOLOGIE",
+  "MEDECINE_TRAVAIL",
+  "MEDECINE_SPORT",
+]);
+
+// General availability schema
+export const generalAvailabilitySchema = z.object({
   monday: z.boolean(),
   tuesday: z.boolean(),
   wednesday: z.boolean(),
@@ -32,6 +103,38 @@ export const availabilitySchema = z.object({
   saturday: z.boolean(),
   sunday: z.boolean(),
 });
+
+// Preferred location schema
+export const preferredLocationSchema = z.object({
+  name: z.string().min(1, "Le nom de la localisation est obligatoire"),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  travelRadius: z
+    .number()
+    .min(1, "Le rayon de déplacement doit être d'au moins 1 km")
+    .max(500, "Le rayon ne peut pas dépasser 500 km"),
+  priority: z
+    .number()
+    .min(1, "La priorité doit être comprise entre 1 et 3")
+    .max(3, "La priorité doit être comprise entre 1 et 3"),
+});
+
+// Specific availability schema
+export const specificAvailabilitySchema = z
+  .object({
+    id: z.string().min(1, "L'ID est obligatoire"),
+    startDate: z.date({ required_error: "La date de début est obligatoire" }),
+    endDate: z.date({ required_error: "La date de fin est obligatoire" }),
+    days: generalAvailabilitySchema,
+    description: z.string().optional(),
+  })
+  .refine((data) => data.endDate > data.startDate, {
+    message: "La date de fin doit être après la date de début",
+    path: ["endDate"],
+  });
+
+// Availability schema (for backward compatibility)
+export const availabilitySchema = generalAvailabilitySchema;
 
 // Schedule schema
 export const scheduleSchema = z.object({
@@ -50,7 +153,7 @@ export const cabinetProfileSchema = z.object({
   phone: z.string().regex(/^[0-9+\-\s().]+$/, "Format de téléphone invalide"),
   description: z.string().optional(),
   specialties: z
-    .array(z.string())
+    .array(medicalSpecialtySchema)
     .min(1, "Au moins une spécialité est requise"),
   photos: z.array(z.string()).optional(),
 });
@@ -60,18 +163,15 @@ export const doctorProfileSchema = z.object({
   firstName: z.string().min(2, "Le prénom est obligatoire").max(255),
   lastName: z.string().min(2, "Le nom est obligatoire").max(255),
   specialties: z
-    .array(z.string())
+    .array(medicalSpecialtySchema)
     .min(1, "Au moins une spécialité est requise"),
   experienceYears: z.number().min(0, "L'expérience doit être positive").max(50),
-  preferredLocation: z
-    .string()
-    .min(1, "La localisation préférée est obligatoire"),
-  travelRadius: z
-    .number()
-    .min(1, "Le rayon de déplacement doit être d'au moins 1 km")
-    .max(500),
+  preferredLocations: z
+    .array(preferredLocationSchema)
+    .min(1, "Au moins une localisation préférée est requise"),
   documents: z.array(z.string()).optional(),
-  availability: availabilitySchema,
+  generalAvailability: generalAvailabilitySchema,
+  specificAvailabilities: z.array(specificAvailabilitySchema).optional(),
   preferredRate: z.number().min(0).optional(),
 });
 
@@ -81,7 +181,7 @@ export const jobOfferBaseSchema = z.object({
     .string()
     .min(5, "Le titre doit contenir au moins 5 caractères")
     .max(255),
-  specialty: z.string().min(1, "La spécialité est obligatoire"),
+  specialty: medicalSpecialtySchema,
   location: z.string().min(1, "La localisation est obligatoire"),
   startDate: z.date({ required_error: "La date de début est obligatoire" }),
   endDate: z.date({ required_error: "La date de fin est obligatoire" }),
@@ -137,7 +237,7 @@ export const conversationSchema = z.object({
 
 // Search filters schema
 export const searchFiltersSchema = z.object({
-  specialty: z.string().optional(),
+  specialty: medicalSpecialtySchema.optional(),
   location: z.string().optional(),
   radius: z.number().min(1).max(500).optional(),
   startDate: z.date().optional(),

@@ -106,33 +106,85 @@ export type CabinetProfileFormData = {
   address: string;
   phone: string;
   description?: string;
-  specialties: string[];
+  specialties: MedicalSpecialty[];
   photos?: string[];
+};
+
+// Types pour les localisations préférées
+export type PreferredLocation = {
+  name: string;
+  latitude?: number;
+  longitude?: number;
+  travelRadius: number; // en kilomètres
+  priority: number; // 1 = priorité haute, 2 = moyenne, 3 = basse
+};
+
+// Types pour les disponibilités
+export type GeneralAvailability = {
+  monday: boolean;
+  tuesday: boolean;
+  wednesday: boolean;
+  thursday: boolean;
+  friday: boolean;
+  saturday: boolean;
+  sunday: boolean;
+};
+
+export type SpecificAvailability = {
+  id: string;
+  startDate: Date;
+  endDate: Date;
+  days: GeneralAvailability;
+  description?: string;
 };
 
 export type DoctorProfileFormData = {
   firstName: string;
   lastName: string;
-  specialties: string[];
+  specialties: MedicalSpecialty[];
   experienceYears: number;
-  preferredLocation: string;
-  travelRadius: number;
+  preferredLocations: PreferredLocation[];
   documents?: string[];
-  availability: {
-    monday: boolean;
-    tuesday: boolean;
-    wednesday: boolean;
-    thursday: boolean;
-    friday: boolean;
-    saturday: boolean;
-    sunday: boolean;
-  };
+  generalAvailability: GeneralAvailability;
+  specificAvailabilities?: SpecificAvailability[];
   preferredRate?: number;
 };
 
+// Spécialités médicales prédéfinies
+export type MedicalSpecialty =
+  | "MEDECINE_GENERALE"
+  | "CARDIOLOGIE"
+  | "DERMATOLOGIE"
+  | "ENDOCRINOLOGIE"
+  | "GASTRO_ENTEROLOGIE"
+  | "GERIATRIE"
+  | "GYNECOLOGIE"
+  | "HEMATOLOGIE"
+  | "NEPHROLOGIE"
+  | "NEUROLOGIE"
+  | "OPHTALMOLOGIE"
+  | "ORL"
+  | "ORTHOPEDYE"
+  | "PEDIATRIE"
+  | "PNEUMOLOGIE"
+  | "PSYCHIATRIE"
+  | "RADIOLOGIE"
+  | "RHUMATOLOGIE"
+  | "UROLOGIE"
+  | "ANESTHESIE"
+  | "CHIRURGIE_GENERALE"
+  | "CHIRURGIE_ORTHOPEDIQUE"
+  | "CHIRURGIE_VASCULAIRE"
+  | "MEDECINE_URGENCE"
+  | "MEDECINE_INTERNE"
+  | "ONCOLOGIE"
+  | "ADDICTOLOGIE"
+  | "MEDECINE_TRAVAIL"
+  | "MEDECINE_SPORT";
+
 export type JobOfferFormData = {
   title: string;
-  specialty: string;
+  specialty: MedicalSpecialty;
   location: string;
   startDate: Date;
   endDate: Date;

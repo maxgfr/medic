@@ -85,7 +85,8 @@ export default function CabinetProfilePage() {
                   address: profile.address,
                   phone: profile.phone,
                   description: profile.description || undefined,
-                  specialties: profile.specialties,
+                  specialties:
+                    profile.specialties as import("~/types").MedicalSpecialty[],
                   photos: profile.photos || undefined,
                 }
               : undefined

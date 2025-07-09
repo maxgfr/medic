@@ -83,12 +83,14 @@ export default function DoctorProfilePage() {
               ? {
                   firstName: profile.firstName,
                   lastName: profile.lastName,
-                  specialties: profile.specialties,
+                  specialties:
+                    profile.specialties as import("~/types").MedicalSpecialty[],
                   experienceYears: profile.experienceYears,
-                  preferredLocation: profile.preferredLocation,
-                  travelRadius: profile.travelRadius,
+                  preferredLocations: profile.preferredLocations,
                   documents: profile.documents || undefined,
-                  availability: profile.availability,
+                  generalAvailability: profile.generalAvailability,
+                  specificAvailabilities:
+                    profile.specificAvailabilities || undefined,
                   preferredRate: profile.preferredRate
                     ? Number(profile.preferredRate)
                     : undefined,

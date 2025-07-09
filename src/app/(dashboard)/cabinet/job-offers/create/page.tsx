@@ -24,6 +24,8 @@ import {
   DollarSign,
   Stethoscope,
 } from "lucide-react";
+import { MEDICAL_SPECIALTIES } from "~/lib/constants";
+import type { MedicalSpecialty } from "~/types";
 
 export default function CreateJobOfferPage() {
   const router = useRouter();
@@ -31,7 +33,7 @@ export default function CreateJobOfferPage() {
   // Form state
   const [formData, setFormData] = useState({
     title: "",
-    specialty: "",
+    specialty: "" as MedicalSpecialty | "",
     location: "",
     startDate: "",
     endDate: "",
@@ -172,24 +174,21 @@ export default function CreateJobOfferPage() {
                 <Select
                   value={formData.specialty}
                   onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, specialty: value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      specialty: value as MedicalSpecialty,
+                    }))
                   }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner une spécialité" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="medecine-generale">
-                      Médecine générale
-                    </SelectItem>
-                    <SelectItem value="cardiologie">Cardiologie</SelectItem>
-                    <SelectItem value="dermatologie">Dermatologie</SelectItem>
-                    <SelectItem value="pediatrie">Pédiatrie</SelectItem>
-                    <SelectItem value="gynecologie">Gynécologie</SelectItem>
-                    <SelectItem value="ophtalmologie">Ophtalmologie</SelectItem>
-                    <SelectItem value="psychiatrie">Psychiatrie</SelectItem>
-                    <SelectItem value="radiologie">Radiologie</SelectItem>
-                    <SelectItem value="autre">Autre</SelectItem>
+                    {MEDICAL_SPECIALTIES.map((specialty) => (
+                      <SelectItem key={specialty.id} value={specialty.id}>
+                        {specialty.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -362,9 +361,12 @@ export default function CreateJobOfferPage() {
                   }))
                 }
                 placeholder="Ajouter un équipement"
-                onKeyPress={(e) =>
-                  e.key === "Enter" && (e.preventDefault(), addEquipment())
-                }
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addEquipment();
+                  }
+                }}
               />
               <Button type="button" onClick={addEquipment} variant="outline">
                 Ajouter

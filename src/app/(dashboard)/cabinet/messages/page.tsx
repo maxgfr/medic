@@ -279,7 +279,9 @@ export default function CabinetMessagesPage() {
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-gray-500" />
                             <span className="text-sm">
-                              {conversationDetails.doctor.preferredLocation}
+                              {conversationDetails.doctor
+                                .preferredLocations?.[0]?.name ||
+                                "Non spécifié"}
                             </span>
                           </div>
                         </div>
@@ -306,7 +308,7 @@ export default function CabinetMessagesPage() {
                           <h4 className="font-semibold mb-2">Disponibilités</h4>
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             {Object.entries(
-                              conversationDetails.doctor.availability
+                              conversationDetails.doctor.generalAvailability
                             ).map(([day, available]) => (
                               <div key={day} className="flex justify-between">
                                 <span className="capitalize">{day}:</span>

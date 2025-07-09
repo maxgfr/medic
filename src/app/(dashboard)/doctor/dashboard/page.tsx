@@ -274,8 +274,8 @@ export default function DoctorDashboardPage() {
               <div className="space-y-2">
                 <p className="text-sm font-medium">Zone de déplacement :</p>
                 <p className="text-sm text-muted-foreground">
-                  {profile?.preferredLocation} • Rayon {profile?.travelRadius}{" "}
-                  km
+                  {profile?.preferredLocations?.[0]?.name || "Non spécifié"} •
+                  Rayon {profile?.preferredLocations?.[0]?.travelRadius || 0} km
                 </p>
               </div>
             </div>

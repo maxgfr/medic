@@ -1,4 +1,5 @@
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -11,10 +12,61 @@ import {
   updateCabinetProfileSchema,
   updateDoctorProfileSchema,
   userRoleSchema,
+  registerApiSchema,
 } from "~/lib/validations";
 import { eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 
 export const authRouter = createTRPCRouter({
+  // Register new user
+  register: publicProcedure
+    .input(registerApiSchema)
+    .mutation(async ({ ctx, input }) => {
+      // Check if user already exists
+      const existingUser = await ctx.db.query.users.findFirst({
+        where: eq(users.email, input.email),
+      });
+
+      if (existingUser) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Un utilisateur avec cet email existe déjà",
+        });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(input.password, 12);
+
+      // Create user
+      const [newUser] = await ctx.db
+        .insert(users)
+        .values({
+          name: input.name,
+          email: input.email,
+          password: hashedPassword,
+          role: input.role,
+        })
+        .returning();
+
+      if (!newUser) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Erreur lors de la création du compte",
+        });
+      }
+
+      return {
+        success: true,
+        message: "Compte créé avec succès",
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          name: newUser.name,
+          role: newUser.role,
+        },
+      };
+    }),
+
   // Get current user with profile
   getMe: protectedProcedure.query(async ({ ctx }) => {
     const user = await ctx.db.query.users.findFirst({
@@ -282,9 +334,16 @@ export const authRouter = createTRPCRouter({
           value: profile.specialties && profile.specialties.length > 0,
         },
         { name: "Experience", value: profile.experienceYears >= 0 },
-        { name: "Preferred location", value: profile.preferredLocation },
-        { name: "Travel radius", value: profile.travelRadius > 0 },
-        { name: "Availability", value: profile.availability },
+        {
+          name: "Preferred location",
+          value:
+            profile.preferredLocations && profile.preferredLocations.length > 0,
+        },
+        {
+          name: "Travel radius",
+          value: (profile.preferredLocations?.[0]?.travelRadius ?? 0) > 0,
+        },
+        { name: "Availability", value: profile.generalAvailability },
       ];
 
       const completed = fields.filter((field) => field.value).length;

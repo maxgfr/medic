@@ -22,15 +22,16 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Icons } from "~/components/ui/icons";
-import { doctorProfileSchema, type DoctorProfile } from "~/lib/validations";
+import { doctorProfileSchema } from "~/lib/validations";
 import { MEDICAL_SPECIALTIES, DAYS_OF_WEEK } from "~/lib/constants";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { DoctorProfileFormData } from "~/types";
 
 interface DoctorProfileFormProps {
-  initialData?: Partial<DoctorProfile>;
+  initialData?: Partial<DoctorProfileFormData>;
   isEditing?: boolean;
 }
 
@@ -41,17 +42,22 @@ export function DoctorProfileForm({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<DoctorProfile>({
+  const form = useForm<DoctorProfileFormData>({
     resolver: zodResolver(doctorProfileSchema),
     defaultValues: {
       firstName: initialData?.firstName || "",
       lastName: initialData?.lastName || "",
       specialties: initialData?.specialties || [],
       experienceYears: initialData?.experienceYears || 0,
-      preferredLocation: initialData?.preferredLocation || "",
-      travelRadius: initialData?.travelRadius || 50,
+      preferredLocations: initialData?.preferredLocations || [
+        {
+          name: "",
+          travelRadius: 50,
+          priority: 1,
+        },
+      ],
       documents: initialData?.documents || [],
-      availability: initialData?.availability || {
+      generalAvailability: initialData?.generalAvailability || {
         monday: true,
         tuesday: true,
         wednesday: true,
@@ -60,6 +66,7 @@ export function DoctorProfileForm({
         saturday: false,
         sunday: false,
       },
+      specificAvailabilities: initialData?.specificAvailabilities || [],
       preferredRate: initialData?.preferredRate || undefined,
     },
   });
@@ -78,7 +85,8 @@ export function DoctorProfileForm({
   const updateMutation = api.auth.updateDoctorProfile.useMutation({
     onSuccess: () => {
       toast.success("Profil médecin mis à jour avec succès !");
-      router.push("/doctor/dashboard");
+      setIsLoading(false);
+      router.refresh();
     },
     onError: (error) => {
       toast.error(error.message || "Erreur lors de la mise à jour du profil");
@@ -86,7 +94,7 @@ export function DoctorProfileForm({
     },
   });
 
-  function onSubmit(values: DoctorProfile) {
+  function onSubmit(values: DoctorProfileFormData) {
     setIsLoading(true);
 
     if (isEditing) {
@@ -96,21 +104,24 @@ export function DoctorProfileForm({
     }
   }
 
-  const selectedSpecialties = form.watch("specialties");
-  const availability = form.watch("availability");
+  const generalAvailability = form.watch("generalAvailability");
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Personal Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Informations Personnelles</CardTitle>
-            <CardDescription>
-              Renseignez vos informations personnelles et professionnelles
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>
+          {isEditing ? "Modifier le profil médecin" : "Créer le profil médecin"}
+        </CardTitle>
+        <CardDescription>
+          {isEditing
+            ? "Mettez à jour vos informations professionnelles"
+            : "Renseignez vos informations professionnelles pour commencer"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Personal Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -125,7 +136,6 @@ export function DoctorProfileForm({
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="lastName"
@@ -141,144 +151,87 @@ export function DoctorProfileForm({
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="experienceYears"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Années d'Expérience *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="50"
-                        placeholder="5"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <FormField
+              control={form.control}
+              name="experienceYears"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Années d'expérience *</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="5"
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormField
-                control={form.control}
-                name="preferredRate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Taux Souhaité (optionnel)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        placeholder="70"
-                        {...field}
-                        onChange={(e) =>
-                          field.onChange(
-                            e.target.value ? Number(e.target.value) : undefined
-                          )
-                        }
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Pourcentage de rétrocession souhaité
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Specialties */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Spécialités Médicales</CardTitle>
-            <CardDescription>
-              Sélectionnez vos spécialités médicales
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            {/* Specialties */}
             <FormField
               control={form.control}
               name="specialties"
               render={() => (
                 <FormItem>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <FormLabel>Spécialités *</FormLabel>
+                  <FormDescription>
+                    Sélectionnez au moins une spécialité
+                  </FormDescription>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {MEDICAL_SPECIALTIES.map((specialty) => (
                       <FormField
                         key={specialty.id}
                         control={form.control}
                         name="specialties"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={specialty.id}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(specialty.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([
-                                          ...field.value,
-                                          specialty.id,
-                                        ])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== specialty.id
-                                          )
-                                        );
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="text-sm font-normal">
-                                {specialty.name}
-                              </FormLabel>
-                            </FormItem>
-                          );
-                        }}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(specialty.id)}
+                                onCheckedChange={(checked) => {
+                                  const currentValue = field.value || [];
+                                  if (checked) {
+                                    field.onChange([
+                                      ...currentValue,
+                                      specialty.id,
+                                    ]);
+                                  } else {
+                                    field.onChange(
+                                      currentValue.filter(
+                                        (value: string) =>
+                                          value !== specialty.id
+                                      )
+                                    );
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">
+                              {specialty.name}
+                            </FormLabel>
+                          </FormItem>
+                        )}
                       />
                     ))}
                   </div>
                   <FormMessage />
-                  {selectedSpecialties.length > 0 && (
-                    <FormDescription>
-                      {selectedSpecialties.length} spécialité(s) sélectionnée(s)
-                    </FormDescription>
-                  )}
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
 
-        {/* Location Preferences */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Préférences de Localisation</CardTitle>
-            <CardDescription>
-              Définissez votre zone de déplacement préférée
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            {/* Primary Preferred Location */}
             <FormField
               control={form.control}
-              name="preferredLocation"
+              name="preferredLocations.0.name"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Localisation Préférée *</FormLabel>
                   <FormControl>
                     <Input placeholder="Paris, Lyon, Marseille..." {...field} />
                   </FormControl>
-                  <FormDescription>
-                    Ville ou région où vous souhaitez principalement exercer
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -286,118 +239,105 @@ export function DoctorProfileForm({
 
             <FormField
               control={form.control}
-              name="travelRadius"
+              name="preferredLocations.0.travelRadius"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Rayon de Déplacement *</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
-                      min="1"
-                      max="500"
                       placeholder="50"
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   </FormControl>
-                  <FormDescription>
-                    Distance maximale en kilomètres que vous êtes prêt(e) à
-                    parcourir
-                  </FormDescription>
+                  <FormDescription>Distance en kilomètres</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
 
-        {/* Availability */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Disponibilités</CardTitle>
-            <CardDescription>
-              Indiquez vos jours de disponibilité habituels
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            {/* General Availability */}
             <FormField
               control={form.control}
-              name="availability"
+              name="generalAvailability"
               render={() => (
                 <FormItem>
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                  <FormLabel>Disponibilités générales *</FormLabel>
+                  <FormDescription>
+                    Sélectionnez vos jours de disponibilité habituels
+                  </FormDescription>
+                  <div className="grid grid-cols-2 gap-2">
                     {DAYS_OF_WEEK.map((day) => (
                       <FormField
                         key={day.key}
                         control={form.control}
-                        name="availability"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={day.key}
-                              className="flex flex-col items-center space-y-2"
-                            >
-                              <FormLabel className="text-sm font-normal">
-                                {day.label}
-                              </FormLabel>
-                              <FormControl>
-                                <Checkbox
-                                  checked={
-                                    field.value?.[
-                                      day.key as keyof typeof field.value
-                                    ]
-                                  }
-                                  onCheckedChange={(checked) => {
-                                    field.onChange({
-                                      ...field.value,
-                                      [day.key]: checked,
-                                    });
-                                  }}
-                                />
-                              </FormControl>
-                            </FormItem>
-                          );
-                        }}
+                        name={`generalAvailability.${
+                          day.key as keyof typeof generalAvailability
+                        }`}
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={(checked) => {
+                                  const currentAvailability = form.getValues(
+                                    "generalAvailability"
+                                  );
+                                  form.setValue("generalAvailability", {
+                                    ...currentAvailability,
+                                    [day.key]: checked,
+                                  });
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-normal">
+                              {day.label}
+                            </FormLabel>
+                          </FormItem>
+                        )}
                       />
                     ))}
                   </div>
                   <FormMessage />
-                  <FormDescription>
-                    Jours disponibles :{" "}
-                    {
-                      Object.entries(availability).filter(
-                        ([_, available]) => available
-                      ).length
-                    }
-                    /7
-                  </FormDescription>
                 </FormItem>
               )}
             />
-          </CardContent>
-        </Card>
 
-        {/* Submit Button */}
-        <div className="flex items-center gap-4">
-          <Button type="submit" disabled={isLoading} className="min-w-[120px]">
-            {isLoading ? (
-              <>
+            {/* Preferred Rate */}
+            <FormField
+              control={form.control}
+              name="preferredRate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tarif journalier souhaité (optionnel)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder="400"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormDescription>Tarif en euros par jour</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && (
                 <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                {isEditing ? "Mise à jour..." : "Création..."}
-              </>
-            ) : (
-              <>
-                <Icons.checkCircle className="mr-2 h-4 w-4" />
-                {isEditing ? "Mettre à jour" : "Créer le profil"}
-              </>
-            )}
-          </Button>
-
-          <Button type="button" variant="outline" onClick={() => router.back()}>
-            Annuler
-          </Button>
-        </div>
-      </form>
-    </Form>
+              )}
+              {isEditing ? "Mettre à jour" : "Créer le profil"}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 }
