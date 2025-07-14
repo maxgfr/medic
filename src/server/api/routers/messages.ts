@@ -25,6 +25,7 @@ export const messagesRouter = createTRPCRouter({
 			z.object({
 				limit: z.number().min(1).max(100).default(20),
 				offset: z.number().min(0).default(0),
+				showArchived: z.boolean().optional(),
 			}),
 		)
 		.query(async ({ ctx, input }) => {
@@ -47,10 +48,15 @@ export const messagesRouter = createTRPCRouter({
 				});
 			}
 
-			const whereCondition =
+			const baseCondition =
 				ctx.session.user.role === "CABINET"
 					? eq(conversations.cabinetId, userProfile.id)
 					: eq(conversations.doctorId, userProfile.id);
+
+			const whereCondition =
+				input.showArchived !== undefined
+					? and(baseCondition, eq(conversations.isArchived, input.showArchived))
+					: baseCondition;
 
 			const userConversations = await ctx.db.query.conversations.findMany({
 				where: whereCondition,

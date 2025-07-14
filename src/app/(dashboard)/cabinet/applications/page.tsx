@@ -60,23 +60,16 @@ type CabinetApplication = {
 	};
 	doctor: {
 		id: string;
-		createdAt: Date;
-		updatedAt: Date | null;
 		userId: string;
 		specialties: string[];
 		firstName: string;
 		lastName: string;
 		experienceYears: number;
-		preferredLocations: unknown;
-		user: {
-			name: string | null;
-			email: string;
-		};
 	};
 };
 
 export default function CabinetApplicationsPage() {
-	const [statusFilter, setStatusFilter] = useState<string>("");
+	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [page, setPage] = useState(1);
 	const [selectedApplication, setSelectedApplication] =
 		useState<CabinetApplication | null>(null);
@@ -89,12 +82,10 @@ export default function CabinetApplicationsPage() {
 		isLoading,
 		refetch,
 	} = api.applications.getByCabinet.useQuery({
-		status: statusFilter as
-			| "SENT"
-			| "VIEWED"
-			| "ACCEPTED"
-			| "REJECTED"
-			| undefined,
+		status:
+			statusFilter && statusFilter !== "all"
+				? (statusFilter as "SENT" | "VIEWED" | "ACCEPTED" | "REJECTED")
+				: undefined,
 		limit,
 		offset: (page - 1) * limit,
 	});
@@ -279,7 +270,7 @@ export default function CabinetApplicationsPage() {
 							<SelectValue placeholder="Tous les statuts" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="">Tous les statuts</SelectItem>
+							<SelectItem value="all">Tous les statuts</SelectItem>
 							<SelectItem value="SENT">Nouvelles</SelectItem>
 							<SelectItem value="VIEWED">Vues</SelectItem>
 							<SelectItem value="ACCEPTED">Acceptées</SelectItem>
@@ -526,9 +517,10 @@ export default function CabinetApplicationsPage() {
 								<CardContent className="space-y-4">
 									<div className="grid grid-cols-2 gap-4 text-sm">
 										<div>
-											<p className="font-medium">Email</p>
+											<p className="font-medium">Nom complet</p>
 											<p className="text-muted-foreground">
-												{selectedApplication.doctor.user.email}
+												Dr. {selectedApplication.doctor.firstName}{" "}
+												{selectedApplication.doctor.lastName}
 											</p>
 										</div>
 										<div>
@@ -544,15 +536,9 @@ export default function CabinetApplicationsPage() {
 											</p>
 										</div>
 										<div>
-											<p className="font-medium">Zone préférée</p>
+											<p className="font-medium">ID Médecin</p>
 											<p className="text-muted-foreground">
-												{Array.isArray(
-													selectedApplication.doctor.preferredLocations,
-												)
-													? selectedApplication.doctor.preferredLocations.join(
-															", ",
-														)
-													: "Non spécifié"}
+												{selectedApplication.doctor.id}
 											</p>
 										</div>
 									</div>

@@ -247,23 +247,30 @@ export const analyticsRouter = createTRPCRouter({
 			}
 
 			// Get recent applications
-			const recentApplications = await ctx.db.query.applications.findMany({
-				where: sql`${jobOffers.cabinetId} = ${cabinetProfile.id}`,
-				orderBy: [desc(applications.createdAt)],
-				limit: input.limit,
-				with: {
-					jobOffer: true,
-					doctor: {
-						with: {
-							user: {
-								columns: {
-									name: true,
-								},
-							},
-						},
+			const recentApplications = await ctx.db
+				.select({
+					id: applications.id,
+					status: applications.status,
+					createdAt: applications.createdAt,
+					jobOfferId: applications.jobOfferId,
+					doctorId: applications.doctorId,
+					jobOffer: {
+						id: jobOffers.id,
+						title: jobOffers.title,
+						cabinetId: jobOffers.cabinetId,
 					},
-				},
-			});
+					doctor: {
+						id: doctorProfiles.id,
+						firstName: doctorProfiles.firstName,
+						lastName: doctorProfiles.lastName,
+					},
+				})
+				.from(applications)
+				.innerJoin(jobOffers, eq(applications.jobOfferId, jobOffers.id))
+				.innerJoin(doctorProfiles, eq(applications.doctorId, doctorProfiles.id))
+				.where(eq(jobOffers.cabinetId, cabinetProfile.id))
+				.orderBy(desc(applications.createdAt))
+				.limit(input.limit);
 
 			return recentApplications.map((app) => ({
 				id: app.id,

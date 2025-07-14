@@ -65,10 +65,10 @@ type JobOfferSearchResult = {
 export default function DoctorJobOffersPage() {
 	// Search filters state
 	const [filters, setFilters] = useState({
-		specialty: "",
+		specialty: "all",
 		location: "",
-		type: "",
-		housingProvided: "",
+		type: "all",
+		housingProvided: "all",
 		minRetrocession: "",
 	});
 
@@ -88,12 +88,19 @@ export default function DoctorJobOffersPage() {
 		isLoading,
 		refetch,
 	} = api.jobOffers.search.useQuery({
-		specialty: filters.specialty || undefined,
+		specialty:
+			filters.specialty && filters.specialty !== "all"
+				? filters.specialty
+				: undefined,
 		location: filters.location || undefined,
-		type: filters.type as "URGENT" | "PLANNED" | "RECURRING" | undefined,
-		housingProvided: filters.housingProvided
-			? filters.housingProvided === "true"
-			: undefined,
+		type:
+			filters.type && filters.type !== "all"
+				? (filters.type as "URGENT" | "PLANNED" | "RECURRING")
+				: undefined,
+		housingProvided:
+			filters.housingProvided && filters.housingProvided !== "all"
+				? filters.housingProvided === "true"
+				: undefined,
 		retrocessionMin: filters.minRetrocession
 			? Number(filters.minRetrocession)
 			: undefined,
@@ -121,10 +128,10 @@ export default function DoctorJobOffersPage() {
 
 	const clearFilters = () => {
 		setFilters({
-			specialty: "",
+			specialty: "all",
 			location: "",
-			type: "",
-			housingProvided: "",
+			type: "all",
+			housingProvided: "all",
 			minRetrocession: "",
 		});
 		setPage(1);
@@ -211,7 +218,7 @@ export default function DoctorJobOffersPage() {
 										<SelectValue placeholder="Toutes spécialités" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="">Toutes spécialités</SelectItem>
+										<SelectItem value="all">Toutes spécialités</SelectItem>
 										<SelectItem value="medecine-generale">
 											Médecine générale
 										</SelectItem>
@@ -259,7 +266,7 @@ export default function DoctorJobOffersPage() {
 										<SelectValue placeholder="Tous types" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="">Tous types</SelectItem>
+										<SelectItem value="all">Tous types</SelectItem>
 										<SelectItem value="PLANNED">Planifié</SelectItem>
 										<SelectItem value="URGENT">Urgent</SelectItem>
 										<SelectItem value="RECURRING">Récurrent</SelectItem>
@@ -280,7 +287,7 @@ export default function DoctorJobOffersPage() {
 										<SelectValue placeholder="Peu importe" />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="">Peu importe</SelectItem>
+										<SelectItem value="all">Peu importe</SelectItem>
 										<SelectItem value="true">Logement fourni</SelectItem>
 										<SelectItem value="false">Pas de logement</SelectItem>
 									</SelectContent>

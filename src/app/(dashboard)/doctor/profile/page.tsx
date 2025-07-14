@@ -12,6 +12,7 @@ import {
 } from "~/components/ui/card";
 import { Icons } from "~/components/ui/icons";
 import { api } from "~/trpc/react";
+import type { MedicalSpecialty } from "~/types";
 
 export default function DoctorProfilePage() {
 	const { data: session } = useSession();
@@ -83,9 +84,7 @@ export default function DoctorProfilePage() {
 							? {
 									firstName: profile.firstName,
 									lastName: profile.lastName,
-									specialties: profile.specialties as import(
-										"~/types",
-									).MedicalSpecialty[],
+									specialties: profile.specialties as MedicalSpecialty[],
 									experienceYears: profile.experienceYears,
 									preferredLocations: profile.preferredLocations,
 									documents: profile.documents || undefined,

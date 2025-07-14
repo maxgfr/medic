@@ -29,7 +29,7 @@ import { Separator } from "~/components/ui/separator";
 import { api } from "~/trpc/react";
 
 export default function DoctorApplicationsPage() {
-	const [statusFilter, setStatusFilter] = useState<string>("");
+	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [page, setPage] = useState(1);
 	const limit = 10;
 
@@ -39,12 +39,10 @@ export default function DoctorApplicationsPage() {
 		isLoading,
 		refetch,
 	} = api.applications.getByDoctor.useQuery({
-		status: statusFilter as
-			| "SENT"
-			| "VIEWED"
-			| "ACCEPTED"
-			| "REJECTED"
-			| undefined,
+		status:
+			statusFilter && statusFilter !== "all"
+				? (statusFilter as "SENT" | "VIEWED" | "ACCEPTED" | "REJECTED")
+				: undefined,
 		limit,
 		offset: (page - 1) * limit,
 	});
@@ -143,7 +141,7 @@ export default function DoctorApplicationsPage() {
 							<SelectValue placeholder="Tous les statuts" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="">Tous les statuts</SelectItem>
+							<SelectItem value="all">Tous les statuts</SelectItem>
 							<SelectItem value="SENT">Envoyées</SelectItem>
 							<SelectItem value="VIEWED">Vues</SelectItem>
 							<SelectItem value="ACCEPTED">Acceptées</SelectItem>

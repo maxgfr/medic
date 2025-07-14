@@ -1,11 +1,14 @@
 import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 import { MEDICAL_SPECIALTIES } from "~/lib/constants";
 import { db } from "~/server/db";
 import {
 	applications,
 	cabinetProfiles,
+	conversations,
 	doctorProfiles,
 	jobOffers,
+	messages,
 	specialties,
 	users,
 } from "~/server/db/schema";
@@ -168,6 +171,21 @@ type UserRecord = {
 
 type CabinetProfileRecord = typeof cabinetProfiles.$inferSelect;
 type DoctorProfileRecord = typeof doctorProfiles.$inferSelect;
+
+async function cleanDatabase() {
+	console.log("🧹 Nettoyage de la base de données...");
+
+	// Supprimer dans l'ordre inverse des dépendances
+	await db.delete(messages);
+	await db.delete(conversations);
+	await db.delete(applications);
+	await db.delete(jobOffers);
+	await db.delete(cabinetProfiles);
+	await db.delete(doctorProfiles);
+	await db.delete(users);
+
+	console.log("✅ Base de données nettoyée");
+}
 
 async function createFakeUsers() {
 	console.log("👥 Création des utilisateurs fake...");
@@ -451,10 +469,134 @@ async function createApplications(
 	return createdApplications;
 }
 
+async function createConversationsAndMessages(
+	jobOffersList: (typeof jobOffers.$inferSelect)[],
+	cabinetProfiles: CabinetProfileRecord[],
+	doctorProfiles: DoctorProfileRecord[],
+	cabinetUsers: UserRecord[],
+	doctorUsers: UserRecord[],
+) {
+	console.log("💬 Création des conversations et messages...");
+
+	const createdConversations = [];
+	const createdMessages = [];
+
+	// Messages types pour les conversations
+	const cabinetMessages = [
+		"Bonjour, votre profil correspond parfaitement à notre offre de remplacement. Êtes-vous disponible pour en discuter ?",
+		"Merci pour votre candidature. Nous serions ravis de vous accueillir dans notre cabinet. Pouvons-nous programmer un entretien ?",
+		"Votre expérience nous intéresse beaucoup. Quand seriez-vous disponible pour commencer ?",
+		"Nous avons quelques questions concernant votre candidature. Pouvez-vous nous donner plus de détails sur votre expérience ?",
+		"Votre candidature a retenu notre attention. Nous souhaitons vous proposer ce remplacement.",
+		"Bonjour, nous avons besoin de clarifications sur vos disponibilités. Pouvez-vous nous en dire plus ?",
+		"Excellent profil ! Nous aimerions vous rencontrer rapidement pour ce remplacement urgent.",
+		"Votre lettre de motivation nous a convaincus. Quand pourriez-vous passer nous voir ?",
+	];
+
+	const doctorMessages = [
+		"Bonjour, je suis très intéressé(e) par votre offre. Pouvez-vous me donner plus de détails sur le poste ?",
+		"Merci pour votre message. Je suis effectivement disponible aux dates mentionnées.",
+		"J'aimerais en savoir plus sur l'organisation du cabinet et l'équipe médicale.",
+		"Quelles sont les modalités pratiques concernant le logement et les horaires ?",
+		"Je suis disponible pour un entretien à votre convenance. Quand vous conviendrait-il ?",
+		"Pouvez-vous me préciser le nombre de patients estimés par jour ?",
+		"Votre cabinet m'intéresse beaucoup. Quand pouvons-nous nous rencontrer ?",
+		"J'ai quelques questions sur les équipements disponibles et les procédures.",
+		"Merci pour cette opportunité. Je suis enthousiaste à l'idée de rejoindre votre équipe.",
+		"Quels sont les délais pour une réponse définitive ?",
+	];
+
+	// Créer environ 15 conversations
+	for (let i = 0; i < 15; i++) {
+		const jobOfferIndex = Math.floor(Math.random() * jobOffersList.length);
+		const jobOffer = jobOffersList[jobOfferIndex];
+		if (!jobOffer) continue;
+
+		const doctorIndex = Math.floor(Math.random() * doctorProfiles.length);
+		const doctor = doctorProfiles[doctorIndex];
+		if (!doctor) continue;
+
+		const cabinetIndex = Math.floor(Math.random() * cabinetProfiles.length);
+		const cabinet = cabinetProfiles[cabinetIndex];
+		if (!cabinet) continue;
+
+		// Créer la conversation
+		const [conversation] = await db
+			.insert(conversations)
+			.values({
+				jobOfferId: jobOffer.id,
+				cabinetId: cabinet.id,
+				doctorId: doctor.id,
+				lastMessageAt: new Date(),
+			})
+			.returning();
+
+		if (!conversation) continue;
+		createdConversations.push(conversation);
+
+		// Créer 3-8 messages par conversation
+		const messageCount = Math.floor(Math.random() * 6) + 3;
+		let lastMessageTime = new Date(
+			Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000,
+		); // dans les 7 derniers jours
+
+		for (let j = 0; j < messageCount; j++) {
+			const isFromCabinet = j % 2 === 0; // Alterner entre cabinet et médecin
+			const senderId = isFromCabinet
+				? cabinetUsers.find((u) => u.name === cabinet.cabinetName)?.id
+				: doctorUsers.find(
+						(u) => u.name === `Dr. ${doctor.firstName} ${doctor.lastName}`,
+					)?.id;
+
+			if (!senderId) continue;
+
+			const messageContent = isFromCabinet
+				? cabinetMessages[Math.floor(Math.random() * cabinetMessages.length)]
+				: doctorMessages[Math.floor(Math.random() * doctorMessages.length)];
+
+			if (!messageContent) continue;
+
+			// Ajouter quelques heures/jours entre les messages
+			lastMessageTime = new Date(
+				lastMessageTime.getTime() + Math.random() * 24 * 60 * 60 * 1000,
+			);
+
+			const [message] = await db
+				.insert(messages)
+				.values({
+					conversationId: conversation.id,
+					senderId,
+					content: messageContent,
+					isRead: Math.random() > 0.3, // 70% des messages sont lus
+					createdAt: lastMessageTime,
+				})
+				.returning();
+
+			if (message) {
+				createdMessages.push(message);
+			}
+		}
+
+		// Mettre à jour la conversation avec le dernier message
+		await db
+			.update(conversations)
+			.set({ lastMessageAt: lastMessageTime })
+			.where(eq(conversations.id, conversation.id));
+	}
+
+	console.log(
+		`✅ Créé ${createdConversations.length} conversations et ${createdMessages.length} messages`,
+	);
+	return { createdConversations, createdMessages };
+}
+
 async function seedFakeData() {
 	console.log("🌱 Démarrage du seeding avec des données fake...");
 
 	try {
+		// 0. Nettoyer la base de données
+		await cleanDatabase();
+
 		// 1. S'assurer que les spécialités sont présentes
 		console.log("📋 Vérification des spécialités médicales...");
 		for (const specialty of MEDICAL_SPECIALTIES) {
@@ -480,6 +622,15 @@ async function seedFakeData() {
 
 		// 5. Créer les candidatures
 		await createApplications(jobOffersList, doctorProfiles);
+
+		// 6. Créer les conversations et messages
+		await createConversationsAndMessages(
+			jobOffersList,
+			cabinetProfiles,
+			doctorProfiles,
+			cabinetUsers,
+			doctorUsers,
+		);
 
 		console.log("🎉 Seeding des données fake terminé avec succès !");
 		console.log("📧 Identifiants de connexion :");

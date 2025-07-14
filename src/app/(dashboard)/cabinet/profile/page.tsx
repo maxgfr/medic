@@ -12,6 +12,7 @@ import {
 } from "~/components/ui/card";
 import { Icons } from "~/components/ui/icons";
 import { api } from "~/trpc/react";
+import type { MedicalSpecialty } from "~/types";
 
 export default function CabinetProfilePage() {
 	const { data: session } = useSession();
@@ -85,9 +86,7 @@ export default function CabinetProfilePage() {
 									address: profile.address,
 									phone: profile.phone,
 									description: profile.description || undefined,
-									specialties: profile.specialties as import(
-										"~/types",
-									).MedicalSpecialty[],
+									specialties: profile.specialties as MedicalSpecialty[],
 									photos: profile.photos || undefined,
 								}
 							: undefined

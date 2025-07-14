@@ -260,31 +260,53 @@ export const applicationsRouter = createTRPCRouter({
 				});
 			}
 
-			const whereConditions = [eq(jobOffers.cabinetId, cabinetProfile.id)];
-
-			if (input.status) {
-				whereConditions.push(eq(applications.status, input.status));
-			}
-
-			const cabinetApplications = await ctx.db.query.applications.findMany({
-				where: and(...whereConditions),
-				orderBy: [desc(applications.createdAt)],
-				limit: input.limit,
-				offset: input.offset,
-				with: {
-					jobOffer: true,
-					doctor: {
-						with: {
-							user: {
-								columns: {
-									name: true,
-									email: true,
-								},
-							},
-						},
+			// Use proper JOIN to get applications for cabinet's job offers
+			const cabinetApplications = await ctx.db
+				.select({
+					id: applications.id,
+					status: applications.status,
+					createdAt: applications.createdAt,
+					updatedAt: applications.updatedAt,
+					jobOfferId: applications.jobOfferId,
+					doctorId: applications.doctorId,
+					motivationLetter: applications.motivationLetter,
+					attachments: applications.attachments,
+					jobOffer: {
+						id: jobOffers.id,
+						title: jobOffers.title,
+						specialty: jobOffers.specialty,
+						location: jobOffers.location,
+						startDate: jobOffers.startDate,
+						endDate: jobOffers.endDate,
+						retrocessionRate: jobOffers.retrocessionRate,
+						type: jobOffers.type,
+						description: jobOffers.description,
+						status: jobOffers.status,
+						cabinetId: jobOffers.cabinetId,
 					},
-				},
-			});
+					doctor: {
+						id: doctorProfiles.id,
+						firstName: doctorProfiles.firstName,
+						lastName: doctorProfiles.lastName,
+						specialties: doctorProfiles.specialties,
+						experienceYears: doctorProfiles.experienceYears,
+						userId: doctorProfiles.userId,
+					},
+				})
+				.from(applications)
+				.innerJoin(jobOffers, eq(applications.jobOfferId, jobOffers.id))
+				.innerJoin(doctorProfiles, eq(applications.doctorId, doctorProfiles.id))
+				.where(
+					input.status
+						? and(
+								eq(jobOffers.cabinetId, cabinetProfile.id),
+								eq(applications.status, input.status),
+							)
+						: eq(jobOffers.cabinetId, cabinetProfile.id),
+				)
+				.orderBy(desc(applications.createdAt))
+				.limit(input.limit)
+				.offset(input.offset);
 
 			return cabinetApplications;
 		}),
@@ -493,21 +515,25 @@ export const applicationsRouter = createTRPCRouter({
 		}
 
 		// Get all applications for this cabinet's job offers
-		const allApplications = await ctx.db.query.applications.findMany({
-			where: eq(jobOffers.cabinetId, cabinetProfile.id),
-			with: {
-				jobOffer: true,
-			},
-		});
+		const allApplications = await ctx.db
+			.select()
+			.from(applications)
+			.innerJoin(jobOffers, eq(applications.jobOfferId, jobOffers.id))
+			.where(eq(jobOffers.cabinetId, cabinetProfile.id));
 
 		const stats = {
 			total: allApplications.length,
-			sent: allApplications.filter((app) => app.status === "SENT").length,
-			viewed: allApplications.filter((app) => app.status === "VIEWED").length,
-			accepted: allApplications.filter((app) => app.status === "ACCEPTED")
+			sent: allApplications.filter((app) => app.application.status === "SENT")
 				.length,
-			rejected: allApplications.filter((app) => app.status === "REJECTED")
-				.length,
+			viewed: allApplications.filter(
+				(app) => app.application.status === "VIEWED",
+			).length,
+			accepted: allApplications.filter(
+				(app) => app.application.status === "ACCEPTED",
+			).length,
+			rejected: allApplications.filter(
+				(app) => app.application.status === "REJECTED",
+			).length,
 		};
 
 		return stats;
