@@ -116,6 +116,7 @@ Desktop.ini
 *.swp
 *.swo
 *~
+.claude/
 
 # Temporary files
 *.tmp

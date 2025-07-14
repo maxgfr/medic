@@ -16,6 +16,7 @@ export default function DashboardLayout({
 	children: React.ReactNode;
 }) {
 	const { data: session, status } = useSession();
+
 	const router = useRouter();
 
 	useEffect(() => {

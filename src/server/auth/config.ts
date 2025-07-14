@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import type { DefaultSession, NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
+import { env } from "~/env.js";
 import { db } from "~/server/db";
 import {
 	accounts,
@@ -37,6 +38,14 @@ declare module "next-auth" {
  * @see https://next-auth.js.org/configuration/options
  */
 export const authConfig = {
+	secret: env.AUTH_SECRET,
+	session: {
+		strategy: "jwt",
+	},
+	pages: {
+		signIn: "/login",
+		error: "/login",
+	},
 	providers: [
 		Credentials({
 			name: "credentials",
@@ -91,12 +100,19 @@ export const authConfig = {
 		verificationTokensTable: verificationTokens,
 	}),
 	callbacks: {
-		session: ({ session, user }) => ({
+		session: ({ session, token }) => ({
 			...session,
 			user: {
 				...session.user,
-				id: user.id,
+				id: token.sub ?? "",
+				role: token.role as "CABINET" | "DOCTOR",
 			},
 		}),
+		jwt: ({ token, user }) => {
+			if (user) {
+				token.role = user.role;
+			}
+			return token;
+		},
 	},
 } satisfies NextAuthConfig;

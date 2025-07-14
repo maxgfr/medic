@@ -2,6 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { getProviders, signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -23,7 +24,6 @@ import {
 } from "~/components/ui/form";
 import { Icons } from "~/components/ui/icons";
 import { Input } from "~/components/ui/input";
-import { Separator } from "~/components/ui/separator";
 import { type LoginFormData, loginSchema } from "~/lib/validations";
 
 type Provider = {
@@ -39,6 +39,7 @@ export default function LoginPage() {
 		null,
 	);
 	const [isLoading, setIsLoading] = useState<string | null>(null);
+	const router = useRouter();
 
 	const form = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
@@ -66,9 +67,9 @@ export default function LoginPage() {
 
 			if (result?.error) {
 				toast.error("Email ou mot de passe incorrect");
-			} else {
+			} else if (result?.ok) {
 				toast.success("Connexion réussie !");
-				window.location.href = "/dashboard";
+				router.push("/dashboard");
 			}
 		} catch (error) {
 			toast.error("Erreur lors de la connexion");
@@ -196,7 +197,7 @@ export default function LoginPage() {
 					variant="ghost"
 					className="w-full"
 					onClick={() => {
-						window.location.href = "/register";
+						router.push("/register");
 					}}
 				>
 					Créer un nouveau compte
