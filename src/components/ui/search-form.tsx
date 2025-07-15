@@ -1,6 +1,5 @@
 "use client";
 
-import { Loader } from "@googlemaps/js-api-loader";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -15,7 +14,10 @@ import {
 } from "~/components/ui/select";
 import { MEDICAL_SPECIALTIES, getSpecialtyOptions } from "~/lib/constants";
 
-/// <reference types="google.maps" />
+interface LocationSuggestion {
+	place_id: string;
+	description: string;
+}
 
 interface SearchFormProps {
 	onSearch: (filters: { specialty?: string; location?: string }) => void;
@@ -25,86 +27,68 @@ interface SearchFormProps {
 export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
 	const [specialty, setSpecialty] = useState<string>("all");
 	const [location, setLocation] = useState<string>("");
-	const [suggestions, setSuggestions] = useState<
-		google.maps.places.AutocompletePrediction[]
-	>([]);
+	const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
 	const [showSuggestions, setShowSuggestions] = useState(false);
-	const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+	const [isSearching, setIsSearching] = useState(false);
 
 	const locationInputRef = useRef<HTMLInputElement>(null);
-	const autocompleteService =
-		useRef<google.maps.places.AutocompleteService | null>(null);
-
-	useEffect(() => {
-		const initializeGoogleMaps = async () => {
-			try {
-				const loader = new Loader({
-					apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-					version: "weekly",
-					libraries: ["places"],
-				});
-
-				await loader.load();
-				autocompleteService.current =
-					new google.maps.places.AutocompleteService();
-				setIsGoogleMapsLoaded(true);
-			} catch (error) {
-				console.error("Error loading Google Maps:", error);
-			}
-		};
-
-		initializeGoogleMaps();
-	}, []);
+	const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	const handleLocationSearch = async (value: string) => {
 		setLocation(value);
 
-		if (
-			!isGoogleMapsLoaded ||
-			!autocompleteService.current ||
-			value.length < 3
-		) {
+		if (value.length < 3) {
 			setSuggestions([]);
 			setShowSuggestions(false);
 			return;
 		}
 
-		try {
-			const request = {
-				input: value,
-				componentRestrictions: { country: "FR" }, // Restrict to France
-				types: ["(cities)"],
-			};
-
-			autocompleteService.current.getPlacePredictions(
-				request,
-				(predictions, status) => {
-					if (
-						status === google.maps.places.PlacesServiceStatus.OK &&
-						predictions
-					) {
-						setSuggestions(predictions);
-						setShowSuggestions(true);
-					} else {
-						setSuggestions([]);
-						setShowSuggestions(false);
-					}
-				},
-			);
-		} catch (error) {
-			console.error("Error fetching place predictions:", error);
-			setSuggestions([]);
-			setShowSuggestions(false);
+		// Clear previous timeout
+		if (debounceTimeoutRef.current) {
+			clearTimeout(debounceTimeoutRef.current);
 		}
+
+		// Debounce the search
+		debounceTimeoutRef.current = setTimeout(async () => {
+			setIsSearching(true);
+			try {
+				const response = await fetch(
+					`/api/google-maps/autocomplete?input=${encodeURIComponent(value)}`,
+				);
+				const data = await response.json();
+
+				if (response.ok && data.predictions) {
+					setSuggestions(data.predictions);
+					setShowSuggestions(true);
+				} else {
+					console.error("Error fetching place predictions:", data.error);
+					setSuggestions([]);
+					setShowSuggestions(false);
+				}
+			} catch (error) {
+				console.error("Error fetching place predictions:", error);
+				setSuggestions([]);
+				setShowSuggestions(false);
+			} finally {
+				setIsSearching(false);
+			}
+		}, 300);
 	};
 
-	const handleLocationSelect = (
-		prediction: google.maps.places.AutocompletePrediction,
-	) => {
-		setLocation(prediction.description);
+	const handleLocationSelect = (suggestion: LocationSuggestion) => {
+		setLocation(suggestion.description);
 		setSuggestions([]);
 		setShowSuggestions(false);
 	};
+
+	// Cleanup timeout on unmount
+	useEffect(() => {
+		return () => {
+			if (debounceTimeoutRef.current) {
+				clearTimeout(debounceTimeoutRef.current);
+			}
+		};
+	}, []);
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -181,25 +165,41 @@ export function SearchForm({ onSearch, isLoading }: SearchFormProps) {
 								<Icons.mapPin className="-translate-y-1/2 absolute top-1/2 right-3 h-4 w-4 transform text-gray-400" />
 							</div>
 
-							{/* Google Maps Suggestions */}
+							{/* Location Suggestions */}
 							{showSuggestions && suggestions.length > 0 && (
 								<Card className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto">
 									<CardContent className="p-2">
-										{suggestions.map((prediction) => (
+										{suggestions.map((suggestion) => (
 											<button
-												key={prediction.place_id}
+												key={suggestion.place_id}
 												type="button"
 												className="w-full rounded-md px-3 py-2 text-left text-sm hover:bg-gray-100"
-												onClick={() => handleLocationSelect(prediction)}
+												onClick={() => handleLocationSelect(suggestion)}
 											>
 												<div className="flex items-center">
 													<Icons.mapPin className="mr-2 h-4 w-4 text-gray-400" />
-													{prediction.description}
+													{suggestion.description}
 												</div>
 											</button>
 										))}
 									</CardContent>
 								</Card>
+							)}
+
+							{/* Loading indicator for suggestions */}
+							{isSearching && (
+								<div className="absolute z-10 mt-1 w-full">
+									<Card>
+										<CardContent className="p-3">
+											<div className="flex items-center">
+												<Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+												<span className="text-gray-500 text-sm">
+													Recherche en cours...
+												</span>
+											</div>
+										</CardContent>
+									</Card>
+								</div>
 							)}
 						</div>
 					</div>
