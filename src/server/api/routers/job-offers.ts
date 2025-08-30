@@ -114,6 +114,34 @@ export const jobOffersRouter = createTRPCRouter({
 				});
 			}
 
+			// Check if profile is complete
+			const fields = [
+				{ name: "Cabinet name", value: cabinetProfile.cabinetName },
+				{ name: "Address", value: cabinetProfile.address },
+				{ name: "Phone", value: cabinetProfile.phone },
+				{
+					name: "Specialties",
+					value:
+						cabinetProfile.specialties && cabinetProfile.specialties.length > 0,
+				},
+			];
+
+			const completed = fields.filter((field) => field.value).length;
+			const completionPercentage = Math.round(
+				(completed / fields.length) * 100,
+			);
+
+			if (completionPercentage < 100) {
+				const missingFields = fields
+					.filter((field) => !field.value)
+					.map((field) => field.name);
+
+				throw new TRPCError({
+					code: "PRECONDITION_FAILED",
+					message: `Votre profil doit être complété à 100% pour publier une annonce. Éléments manquants : ${missingFields.join(", ")}`,
+				});
+			}
+
 			// Convert retrocessionRate to string for database
 			const { retrocessionRate, ...rest } = input;
 

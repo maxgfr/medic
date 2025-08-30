@@ -46,12 +46,22 @@ export default function CabinetDashboardPage() {
 			<div className="flex items-center justify-between space-y-2">
 				<h2 className="font-bold text-3xl tracking-tight">Dashboard Cabinet</h2>
 				<div className="flex items-center space-x-2">
-					<Button asChild>
-						<Link href="/cabinet/job-offers/new">
+					{profileCompletion?.isComplete ? (
+						<Button asChild>
+							<Link href="/cabinet/job-offers/new">
+								<Icons.plus className="mr-2 h-4 w-4" />
+								Nouvelle annonce
+							</Link>
+						</Button>
+					) : (
+						<Button
+							disabled
+							title="Complétez votre profil à 100% pour publier une annonce"
+						>
 							<Icons.plus className="mr-2 h-4 w-4" />
 							Nouvelle annonce
-						</Link>
-					</Button>
+						</Button>
+					)}
 				</div>
 			</div>
 
@@ -204,11 +214,6 @@ export default function CabinetDashboardPage() {
 									<p className="mb-4 text-muted-foreground text-sm">
 										Vous n'avez pas encore publié d'annonces de remplacement.
 									</p>
-									<Button asChild size="sm">
-										<Link href="/cabinet/job-offers/new">
-											Créer ma première annonce
-										</Link>
-									</Button>
 								</div>
 							)}
 						</div>
@@ -271,63 +276,29 @@ export default function CabinetDashboardPage() {
 									</div>
 								))
 							) : (
-								<div className="py-4 text-center">
-									<p className="text-muted-foreground text-sm">
+								<div className="flex flex-col items-center justify-center py-8 text-center">
+									<Icons.user className="mb-4 h-12 w-12 text-muted-foreground" />
+									<h3 className="mb-2 font-semibold text-lg">
 										Aucune candidature récente
+									</h3>
+									<p className="mb-4 text-muted-foreground text-sm">
+										Vous n'avez pas encore reçu de candidatures.
 									</p>
 								</div>
 							)}
 						</div>
-						<div className="mt-4">
-							<Button asChild variant="outline" className="w-full">
-								<Link href="/cabinet/applications">
-									Voir toutes les candidatures
-								</Link>
-							</Button>
-						</div>
+						{recentActivity && recentActivity.length > 0 && (
+							<div className="mt-4">
+								<Button asChild variant="outline" className="w-full">
+									<Link href="/cabinet/applications">
+										Voir toutes les candidatures
+									</Link>
+								</Button>
+							</div>
+						)}
 					</CardContent>
 				</Card>
 			</div>
-
-			{/* Quick Actions */}
-			<Card>
-				<CardHeader>
-					<CardTitle>Actions Rapides</CardTitle>
-					<CardDescription>
-						Raccourcis vers vos actions les plus fréquentes
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<div className="grid gap-4 md:grid-cols-3">
-						<Button asChild variant="outline" className="h-auto p-4">
-							<Link href="/cabinet/job-offers/new">
-								<div className="flex flex-col items-center space-y-2">
-									<Icons.plus className="h-6 w-6" />
-									<span>Créer une annonce</span>
-								</div>
-							</Link>
-						</Button>
-
-						<Button asChild variant="outline" className="h-auto p-4">
-							<Link href="/cabinet/applications">
-								<div className="flex flex-col items-center space-y-2">
-									<Icons.user className="h-6 w-6" />
-									<span>Gérer les candidatures</span>
-								</div>
-							</Link>
-						</Button>
-
-						<Button asChild variant="outline" className="h-auto p-4">
-							<Link href="/cabinet/messages">
-								<div className="flex flex-col items-center space-y-2">
-									<Icons.messageCircle className="h-6 w-6" />
-									<span>Messages</span>
-								</div>
-							</Link>
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
 		</div>
 	);
 }

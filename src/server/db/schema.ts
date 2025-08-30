@@ -371,14 +371,6 @@ export const usersRelations = relations(users, ({ many, one }) => ({
 	cabinetProfile: one(cabinetProfiles),
 	doctorProfile: one(doctorProfiles),
 	sentMessages: many(messages),
-	jobOffers: many(jobOffers),
-	applications: many(applications),
-	cabinetConversations: many(conversations, {
-		relationName: "cabinetConversations",
-	}),
-	doctorConversations: many(conversations, {
-		relationName: "doctorConversations",
-	}),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -447,10 +439,12 @@ export const conversationsRelations = relations(
 		cabinet: one(cabinetProfiles, {
 			fields: [conversations.cabinetId],
 			references: [cabinetProfiles.id],
+			relationName: "cabinetConversations",
 		}),
 		doctor: one(doctorProfiles, {
 			fields: [conversations.doctorId],
 			references: [doctorProfiles.id],
+			relationName: "doctorConversations",
 		}),
 		messages: many(messages),
 	}),

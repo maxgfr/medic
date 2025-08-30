@@ -7,11 +7,13 @@ import {
 	MapPin,
 	Stethoscope,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Icons } from "~/components/ui/icons";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -29,6 +31,9 @@ import type { MedicalSpecialty } from "~/types";
 
 export default function NewJobOfferPage() {
 	const router = useRouter();
+
+	// Check profile completion
+	const { data: profileCompletion } = api.auth.getProfileCompletion.useQuery();
 
 	// Form state
 	const [formData, setFormData] = useState({
@@ -61,6 +66,15 @@ export default function NewJobOfferPage() {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+
+		// Check if profile is complete
+		if (!profileCompletion?.isComplete) {
+			toast.error(
+				"Vous devez compléter votre profil à 100% avant de publier une annonce",
+			);
+			router.push("/cabinet/profile");
+			return;
+		}
 
 		if (
 			!formData.title ||
@@ -145,6 +159,34 @@ export default function NewJobOfferPage() {
 					</p>
 				</div>
 			</div>
+
+			{/* Profile completion warning */}
+			{profileCompletion && !profileCompletion.isComplete && (
+				<Card className="mb-6 border-yellow-200 bg-yellow-50">
+					<CardContent className="flex items-center justify-between p-4">
+						<div className="flex items-center space-x-2">
+							<div className="rounded-full bg-yellow-100 p-2">
+								<Icons.alertCircle className="h-5 w-5 text-yellow-600" />
+							</div>
+							<div>
+								<p className="font-medium text-yellow-800">
+									Profil incomplet ({profileCompletion.completionPercentage}%)
+								</p>
+								<p className="text-sm text-yellow-600">
+									Vous devez compléter votre profil à 100% pour publier une
+									annonce.
+									<br />
+									Éléments manquants :{" "}
+									{profileCompletion.missingFields.join(", ")}
+								</p>
+							</div>
+						</div>
+						<Button asChild variant="outline" size="sm">
+							<Link href="/cabinet/profile">Compléter le profil</Link>
+						</Button>
+					</CardContent>
+				</Card>
+			)}
 
 			<form onSubmit={handleSubmit} className="space-y-6">
 				{/* Informations principales */}

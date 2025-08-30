@@ -48,6 +48,9 @@ export default function JobOffersPage() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 
+	// Check profile completion
+	const { data: profileCompletion } = api.auth.getProfileCompletion.useQuery();
+
 	// Fetch job offers for the cabinet
 	const { data: jobOffers, isLoading } = api.jobOffers.getByCabinet.useQuery({
 		status:
@@ -62,8 +65,14 @@ export default function JobOffersPage() {
 	const { data: stats } = api.jobOffers.getStats.useQuery();
 
 	const handleCreateOffer = () => {
+		// Check if profile is complete
+		if (!profileCompletion?.isComplete) {
+			// Show toast or redirect to profile
+			window.location.href = "/cabinet/profile";
+			return;
+		}
 		// Navigate to creation page
-		window.location.href = "/cabinet/job-offers/create";
+		window.location.href = "/cabinet/job-offers/new";
 	};
 
 	const filteredOffers =
@@ -95,7 +104,16 @@ export default function JobOffersPage() {
 						Gérez vos offres de remplacement médical
 					</p>
 				</div>
-				<Button onClick={handleCreateOffer} size="lg">
+				<Button
+					onClick={handleCreateOffer}
+					size="lg"
+					disabled={!profileCompletion?.isComplete}
+					title={
+						!profileCompletion?.isComplete
+							? "Complétez votre profil à 100% pour créer une annonce"
+							: "Créer une nouvelle annonce"
+					}
+				>
 					<Plus className="mr-2 h-4 w-4" />
 					Créer une annonce
 				</Button>
@@ -173,7 +191,15 @@ export default function JobOffersPage() {
 							<p className="mb-4 text-muted-foreground">
 								Aucune annonce trouvée
 							</p>
-							<Button onClick={handleCreateOffer}>
+							<Button
+								onClick={handleCreateOffer}
+								disabled={!profileCompletion?.isComplete}
+								title={
+									!profileCompletion?.isComplete
+										? "Complétez votre profil à 100% pour créer une annonce"
+										: "Créer votre première annonce"
+								}
+							>
 								<Plus className="mr-2 h-4 w-4" />
 								Créer votre première annonce
 							</Button>
