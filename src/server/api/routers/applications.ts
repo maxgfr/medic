@@ -123,10 +123,7 @@ export const applicationsRouter = createTRPCRouter({
 			});
 
 			if (!doctorProfile) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "Profil médecin non trouvé",
-				});
+				return []; // Return empty array when profile doesn't exist yet
 			}
 
 			const whereConditions = [eq(applications.doctorId, doctorProfile.id)];
@@ -508,10 +505,7 @@ export const applicationsRouter = createTRPCRouter({
 		});
 
 		if (!cabinetProfile) {
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message: "Profil cabinet non trouvé",
-			});
+			return []; // Return empty array when profile doesn't exist yet
 		}
 
 		// Get all applications for this cabinet's job offers

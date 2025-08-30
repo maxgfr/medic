@@ -42,10 +42,7 @@ export const messagesRouter = createTRPCRouter({
 			}
 
 			if (!userProfile) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "Profil utilisateur non trouvé",
-				});
+				return []; // Return empty array when profile doesn't exist yet
 			}
 
 			const baseCondition =

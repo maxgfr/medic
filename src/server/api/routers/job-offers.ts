@@ -495,10 +495,7 @@ export const jobOffersRouter = createTRPCRouter({
 		});
 
 		if (!cabinetProfile) {
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message: "Profil cabinet non trouvé",
-			});
+			return []; // Return empty array when profile doesn't exist yet
 		}
 
 		const stats = await ctx.db

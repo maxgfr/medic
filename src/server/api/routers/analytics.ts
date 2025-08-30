@@ -33,10 +33,15 @@ export const analyticsRouter = createTRPCRouter({
 		});
 
 		if (!cabinetProfile) {
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message: "Profil cabinet non trouvé",
-			});
+			// Return empty stats when profile doesn't exist yet
+			return {
+				totalJobOffers: 0,
+				activeJobOffers: 0,
+				totalApplications: 0,
+				pendingApplications: 0,
+				acceptedApplications: 0,
+				activeConversations: 0,
+			};
 		}
 
 		// Get counts for different metrics
@@ -132,10 +137,15 @@ export const analyticsRouter = createTRPCRouter({
 		});
 
 		if (!doctorProfile) {
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message: "Profil médecin non trouvé",
-			});
+			// Return empty stats when profile doesn't exist yet
+			return {
+				totalApplications: 0,
+				pendingApplications: 0,
+				acceptedApplications: 0,
+				rejectedApplications: 0,
+				activeConversations: 0,
+				availableJobOffers: 0,
+			};
 		}
 
 		// Get counts for different metrics

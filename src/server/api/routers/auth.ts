@@ -183,7 +183,7 @@ export const authRouter = createTRPCRouter({
 		});
 
 		if (!cabinetProfile) {
-			throw new Error("Cabinet profile not found");
+			return null; // Return null instead of throwing error
 		}
 
 		return cabinetProfile;
@@ -266,7 +266,7 @@ export const authRouter = createTRPCRouter({
 		});
 
 		if (!doctorProfile) {
-			throw new Error("Doctor profile not found");
+			return null; // Return null instead of throwing error
 		}
 
 		return doctorProfile;
