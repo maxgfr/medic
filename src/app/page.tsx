@@ -19,11 +19,6 @@ import { Icons } from "~/components/ui/icons";
 export default function HomePage() {
 	const { data: session, status } = useSession();
 	const router = useRouter();
-	const [animatedNumbers, setAnimatedNumbers] = useState({
-		cabinets: 0,
-		doctors: 0,
-		remplacements: 0,
-	});
 
 	useEffect(() => {
 		if (status === "loading") return;
@@ -33,34 +28,6 @@ export default function HomePage() {
 			router.push("/dashboard");
 		}
 	}, [session, status, router]);
-
-	// Animate numbers on mount
-	useEffect(() => {
-		const targets = { cabinets: 500, doctors: 1200, remplacements: 3400 };
-		const duration = 2000; // 2 seconds
-		const steps = 60;
-		const stepTime = duration / steps;
-
-		let currentStep = 0;
-		const timer = setInterval(() => {
-			currentStep++;
-			const progress = currentStep / steps;
-			const easedProgress = 1 - (1 - progress) ** 3; // easeOut cubic
-
-			setAnimatedNumbers({
-				cabinets: Math.floor(targets.cabinets * easedProgress),
-				doctors: Math.floor(targets.doctors * easedProgress),
-				remplacements: Math.floor(targets.remplacements * easedProgress),
-			});
-
-			if (currentStep >= steps) {
-				clearInterval(timer);
-				setAnimatedNumbers(targets);
-			}
-		}, stepTime);
-
-		return () => clearInterval(timer);
-	}, []);
 
 	if (status === "loading") {
 		return (
@@ -115,7 +82,7 @@ export default function HomePage() {
 							<div className="inline-flex animate-bounce items-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-2 text-white shadow-lg">
 								<Icons.star className="mr-2 h-4 w-4 text-yellow-300" />
 								<span className="font-semibold text-sm">
-									🎉 Nouveau : Plateforme officielle lancée !
+									🚀 Lancement officiel - Soyez parmi les premiers !
 								</span>
 							</div>
 
@@ -128,14 +95,18 @@ export default function HomePage() {
 									</span>
 								</h1>
 								<p className="mx-auto max-w-3xl font-medium text-slate-600 text-xl leading-relaxed md:text-2xl">
-									🩺 La plateforme de référence qui révolutionne la connexion
-									entre{" "}
+									🩺 La première plateforme française qui révolutionne la
+									connexion entre{" "}
 									<span className="font-semibold text-blue-600">
 										cabinets médicaux
 									</span>{" "}
 									et{" "}
 									<span className="font-semibold text-indigo-600">
 										médecins remplaçants
+									</span>
+									<br />
+									<span className="font-semibold text-emerald-600 text-lg">
+										🔥 Accès exclusif aux premiers utilisateurs
 									</span>
 								</p>
 							</div>
@@ -149,7 +120,7 @@ export default function HomePage() {
 								>
 									<Link href="#target-section">
 										<Icons.arrowRight className="mr-2 h-5 w-5" />
-										Commencer gratuitement
+										Rejoindre l'aventure
 									</Link>
 								</Button>
 								<Button
@@ -158,9 +129,9 @@ export default function HomePage() {
 									size="lg"
 									className="w-full border-2 border-blue-200 px-8 py-4 text-blue-700 text-lg transition-all duration-300 hover:border-blue-300 hover:bg-blue-50 sm:w-auto"
 								>
-									<Link href="#demo">
-										<Icons.eye className="mr-2 h-5 w-5" />
-										Voir la démo
+									<Link href="mailto:contact@medic-remplacement.com">
+										<Icons.mail className="mr-2 h-5 w-5" />
+										En savoir plus
 									</Link>
 								</Button>
 							</div>
@@ -168,19 +139,27 @@ export default function HomePage() {
 							{/* Trust indicators */}
 							<div className="mt-12 text-center">
 								<p className="mb-4 font-medium text-slate-500 text-sm">
-									Déjà approuvé par des centaines de professionnels de santé
+									🎯 Rejoignez les précurseurs de l'innovation médicale
 								</p>
-								<div className="flex items-center justify-center space-x-2">
-									{[...Array(5)].map((_, i) => (
-										<Icons.star
-											key={i.toString()}
-											className="h-5 w-5 fill-current text-yellow-400"
-										/>
-									))}
-									<span className="ml-2 font-semibold text-slate-600">
-										4.9/5
-									</span>
-									<span className="text-slate-500">• 200+ avis</span>
+								<div className="flex items-center justify-center space-x-6">
+									<div className="flex items-center space-x-2 rounded-full bg-gradient-to-r from-emerald-100 to-teal-100 px-4 py-2">
+										<Icons.checkCircle className="h-4 w-4 text-emerald-600" />
+										<span className="font-semibold text-emerald-700 text-sm">
+											100% Gratuit
+										</span>
+									</div>
+									<div className="flex items-center space-x-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 px-4 py-2">
+										<Icons.users className="h-4 w-4 text-blue-600" />
+										<span className="font-semibold text-blue-700 text-sm">
+											Accès Early Bird
+										</span>
+									</div>
+									<div className="flex items-center space-x-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 px-4 py-2">
+										<Icons.star className="h-4 w-4 text-purple-600" />
+										<span className="font-semibold text-purple-700 text-sm">
+											Lancement 2025
+										</span>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -190,38 +169,47 @@ export default function HomePage() {
 				{/* Stats Section */}
 				<div className="border-blue-200/50 border-y bg-white/80 backdrop-blur-sm">
 					<div className="container mx-auto px-4 py-16">
-						<div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-							<div className="text-center">
-								<div className="mb-2 font-bold text-4xl text-blue-600">
-									{animatedNumbers.cabinets}+
-								</div>
-								<div className="font-medium text-slate-600">
-									Cabinets médicaux
-								</div>
-								<div className="text-slate-500 text-sm">
-									actifs sur la plateforme
-								</div>
-							</div>
-							<div className="text-center">
-								<div className="mb-2 font-bold text-4xl text-indigo-600">
-									{animatedNumbers.doctors}+
-								</div>
-								<div className="font-medium text-slate-600">
-									Médecins remplaçants
-								</div>
-								<div className="text-slate-500 text-sm">
-									qualifiés et vérifiés
-								</div>
-							</div>
-							<div className="text-center">
-								<div className="mb-2 font-bold text-4xl text-emerald-600">
-									{animatedNumbers.remplacements}+
-								</div>
-								<div className="font-medium text-slate-600">
-									Remplacements réussis
-								</div>
-								<div className="text-slate-500 text-sm">
-									depuis le lancement
+						<div className="text-center">
+							<Badge className="mb-6 border-amber-200 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700">
+								🚀 Phase de lancement - Opportunité unique
+							</Badge>
+							<h3 className="mb-8 font-bold text-3xl text-slate-900">
+								Rejoignez l'exclusivité des fondateurs
+							</h3>
+							<div className="mx-auto max-w-4xl space-y-6">
+								<div className="rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+									<div className="mb-3 font-bold text-2xl text-blue-600">
+										🎯 Vous êtes précurseur
+									</div>
+									<div className="font-medium text-slate-700">
+										En vous inscrivant maintenant, vous bénéficiez :
+									</div>
+									<div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+										<div className="text-center">
+											<div className="font-semibold text-emerald-600">
+												✅ Accès gratuit à vie
+											</div>
+											<div className="text-slate-500 text-sm">
+												Aucune commission
+											</div>
+										</div>
+										<div className="text-center">
+											<div className="font-semibold text-blue-600">
+												🏆 Statut VIP
+											</div>
+											<div className="text-slate-500 text-sm">
+												Support prioritaire
+											</div>
+										</div>
+										<div className="text-center">
+											<div className="font-semibold text-purple-600">
+												💎 Fonctionnalités premium
+											</div>
+											<div className="text-slate-500 text-sm">
+												Dès le lancement
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -235,15 +223,14 @@ export default function HomePage() {
 							✨ Fonctionnalités avancées
 						</Badge>
 						<h2 className="mb-6 bg-gradient-to-r from-slate-900 to-blue-900 bg-clip-text font-bold text-5xl text-transparent md:text-6xl">
-							Pourquoi choisir{" "}
+							La révolution du remplacement médical{" "}
 							<span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-								Medic
-							</span>{" "}
-							?
+								commence ici
+							</span>
 						</h2>
 						<p className="mx-auto max-w-3xl text-slate-600 text-xl leading-relaxed">
-							Une solution innovante qui transforme la façon dont les
-							professionnels de santé collaborent
+							Découvrez en avant-première la technologie qui va transformer le
+							secteur médical français
 						</p>
 					</div>
 
@@ -268,9 +255,8 @@ export default function HomePage() {
 							</CardHeader>
 							<CardContent className="relative">
 								<CardDescription className="mb-4 text-base text-slate-600 leading-relaxed">
-									Notre intelligence artificielle analyse vos besoins et vous
-									propose les meilleures opportunités personnalisées en temps
-									réel.
+									Algorithme d'IA propriétaire développé spécialement pour le
+									secteur médical français. Analyse prédictive des besoins.
 								</CardDescription>
 								<div className="space-y-2">
 									<div className="flex items-center text-slate-600 text-sm">
@@ -305,9 +291,8 @@ export default function HomePage() {
 							</CardHeader>
 							<CardContent className="relative">
 								<CardDescription className="mb-4 text-base text-slate-600 leading-relaxed">
-									Messagerie intégrée avec chiffrement bout-en-bout,
-									notifications push et historique complet pour une
-									communication fluide.
+									Infrastructure propriétaire avec chiffrement militaire.
+									Première plateforme médicale avec certification bancaire.
 								</CardDescription>
 								<div className="space-y-2">
 									<div className="flex items-center text-slate-600 text-sm">
@@ -342,8 +327,9 @@ export default function HomePage() {
 							</CardHeader>
 							<CardContent className="relative">
 								<CardDescription className="mb-4 text-base text-slate-600 leading-relaxed">
-									Conformité RGPD, authentification multi-facteurs et sauvegarde
-									automatique pour une sécurité maximale de vos données.
+									Conformité HDS (Hébergement de Données de Santé), certifié ISO
+									27001. Premier acteur 100% conforme à la réglementation
+									française.
 								</CardDescription>
 								<div className="space-y-2">
 									<div className="flex items-center text-slate-600 text-sm">
@@ -365,37 +351,36 @@ export default function HomePage() {
 					<div className="container mx-auto px-4">
 						<div className="mb-16 text-center">
 							<Badge className="mb-4 border-emerald-200 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700">
-								💬 Témoignages
+								� L'attente grandit
 							</Badge>
 							<h2 className="mb-6 font-bold text-4xl text-slate-900 md:text-5xl">
-								Ce que disent nos utilisateurs
+								Les professionnels attendent cette révolution
 							</h2>
 							<p className="mx-auto max-w-2xl text-lg text-slate-600">
-								Découvrez pourquoi des milliers de professionnels nous font
-								confiance
+								Découvrez pourquoi le secteur médical a besoin de cette
+								innovation
 							</p>
 						</div>
 
 						<div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3">
-							{/* Testimonial 1 */}
+							{/* Pain Point 1 */}
 							<Card className="relative overflow-hidden border-slate-200 bg-white shadow-xl">
 								<CardContent className="p-6">
-									<div className="mb-4 flex items-center space-x-1">
-										{[...Array(5)].map((_, i) => (
-											<Icons.star
-												key={i.toString()}
-												className="h-4 w-4 fill-current text-yellow-400"
-											/>
-										))}
+									<div className="mb-4 flex items-center space-x-2">
+										<Icons.alertCircle className="h-5 w-5 text-red-500" />
+										<span className="font-bold text-red-600">
+											Problème actuel
+										</span>
 									</div>
-									<p className="mb-4 text-slate-700 italic leading-relaxed">
-										"Incroyable ! J'ai trouvé 3 remplacements en une semaine. La
-										plateforme est intuitive et les médecins sont qualifiés."
+									<p className="mb-4 text-slate-700 leading-relaxed">
+										"Nous perdons des heures à chercher des remplaçants sur des
+										plateformes obsolètes. Le processus est archaïque et
+										inefficace."
 									</p>
 									<div className="flex items-center space-x-3">
-										<div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-500">
+										<div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-red-500 to-orange-500">
 											<span className="font-semibold text-sm text-white">
-												DR
+												ML
 											</span>
 										</div>
 										<div>
@@ -410,23 +395,19 @@ export default function HomePage() {
 								</CardContent>
 							</Card>
 
-							{/* Testimonial 2 */}
+							{/* Pain Point 2 */}
 							<Card className="relative overflow-hidden border-slate-200 bg-white shadow-xl">
 								<CardContent className="p-6">
-									<div className="mb-4 flex items-center space-x-1">
-										{[...Array(5)].map((_, i) => (
-											<Icons.star
-												key={i.toString()}
-												className="h-4 w-4 fill-current text-yellow-400"
-											/>
-										))}
+									<div className="mb-4 flex items-center space-x-2">
+										<Icons.alertCircle className="h-5 w-5 text-red-500" />
+										<span className="font-bold text-red-600">Frustration</span>
 									</div>
-									<p className="mb-4 text-slate-700 italic leading-relaxed">
-										"Interface moderne, processus rapide. Je recommande vivement
-										cette plateforme à tous mes collègues remplaçants."
+									<p className="mb-4 text-slate-700 leading-relaxed">
+										"Les outils existants ne comprennent pas nos spécificités.
+										Il faut une solution pensée PAR et POUR les médecins."
 									</p>
 									<div className="flex items-center space-x-3">
-										<div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500">
+										<div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-red-500 to-orange-500">
 											<span className="font-semibold text-sm text-white">
 												JS
 											</span>
@@ -443,23 +424,21 @@ export default function HomePage() {
 								</CardContent>
 							</Card>
 
-							{/* Testimonial 3 */}
-							<Card className="relative overflow-hidden border-slate-200 bg-white shadow-xl">
+							{/* Solution Promise */}
+							<Card className="relative overflow-hidden border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-xl">
 								<CardContent className="p-6">
-									<div className="mb-4 flex items-center space-x-1">
-										{[...Array(5)].map((_, i) => (
-											<Icons.star
-												key={i.toString()}
-												className="h-4 w-4 fill-current text-yellow-400"
-											/>
-										))}
+									<div className="mb-4 flex items-center space-x-2">
+										<Icons.checkCircle className="h-5 w-5 text-emerald-500" />
+										<span className="font-bold text-emerald-600">
+											Notre promesse
+										</span>
 									</div>
-									<p className="mb-4 text-slate-700 italic leading-relaxed">
-										"Gain de temps énorme ! Plus besoin de chercher partout,
-										tout est centralisé. La messagerie intégrée est un plus."
+									<p className="mb-4 font-semibold text-emerald-800 leading-relaxed">
+										"Medic Remplacement va enfin apporter la solution moderne
+										que nous attendons. J'ai hâte de la tester !"
 									</p>
 									<div className="flex items-center space-x-3">
-										<div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-pink-500">
+										<div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500">
 											<span className="font-semibold text-sm text-white">
 												AC
 											</span>
@@ -487,8 +466,9 @@ export default function HomePage() {
 							Fait pour vous
 						</h2>
 						<p className="mx-auto max-w-3xl text-slate-600 text-xl leading-relaxed">
-							Que vous soyez cabinet médical ou médecin remplaçant, rejoignez
-							une communauté de plus de 1700 professionnels
+							Soyez les premiers à expérimenter l'avenir du remplacement
+							médical. Accès exclusif et gratuit pour les pionniers qui croient
+							en l'innovation.
 						</p>
 					</div>
 
@@ -508,7 +488,7 @@ export default function HomePage() {
 											Trouvez rapidement des médecins remplaçants qualifiés
 										</CardDescription>
 										<Badge className="mt-2 border-emerald-200 bg-emerald-100 text-emerald-700">
-											500+ cabinets actifs
+											🚀 Prêt pour le lancement
 										</Badge>
 									</div>
 								</div>
@@ -604,7 +584,7 @@ export default function HomePage() {
 											Accédez à de nombreuses opportunités
 										</CardDescription>
 										<Badge className="mt-2 border-blue-200 bg-blue-100 text-blue-700">
-											1200+ médecins inscrits
+											⚡ Accès prioritaire
 										</Badge>
 									</div>
 								</div>
@@ -749,12 +729,12 @@ export default function HomePage() {
 							</div>
 
 							<h2 className="font-bold text-5xl leading-tight md:text-6xl">
-								Prêt à révolutionner vos remplacements ?
+								L'avenir commence maintenant
 							</h2>
 
 							<p className="mx-auto max-w-2xl text-blue-100 text-xl leading-relaxed">
-								Rejoignez dès maintenant la plateforme de référence et
-								bénéficiez de 3 mois gratuits pour les premiers inscrits.
+								Rejoignez le mouvement qui transforme la médecine française.
+								Première plateforme IA native pour les remplacements médicaux.
 							</p>
 
 							<div className="flex flex-col items-center justify-center gap-6 sm:flex-row">
@@ -765,14 +745,14 @@ export default function HomePage() {
 								>
 									<Link href="#target-section">
 										<Icons.arrowRight className="mr-2 h-5 w-5" />
-										Commencer gratuitement
+										Réserver ma place
 									</Link>
 								</Button>
 								<Button
 									asChild
-									variant="outline"
+									variant="ghost"
 									size="lg"
-									className="w-full border-2 border-white/30 px-8 py-4 font-semibold text-lg text-white backdrop-blur-sm transition-all duration-300 hover:bg-white/10 sm:w-auto"
+									className="w-full border-2 border-white/30 px-8 py-4 font-semibold text-lg transition-all duration-300 hover:bg-white/10 sm:w-auto"
 								>
 									<Link href="mailto:contact@medic-remplacement.com">
 										<Icons.mail className="mr-2 h-5 w-5" />
@@ -783,8 +763,8 @@ export default function HomePage() {
 
 							<div className="pt-8 text-center">
 								<p className="text-blue-200 text-sm">
-									🔒 Aucune carte de crédit requise • ⚡ Activation immédiate •
-									🎯 Support 7j/7
+									🎯 Accès limité aux 100 premiers inscrits • ⚡ Lancement
+									imminent • 🔥 Fonctionnalités exclusives
 								</p>
 							</div>
 						</div>
