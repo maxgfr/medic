@@ -182,10 +182,7 @@ export const applicationsRouter = createTRPCRouter({
 			});
 
 			if (!cabinetProfile) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "Profil cabinet non trouvé",
-				});
+				return []; // Return empty array when profile doesn't exist yet
 			}
 
 			// Verify job offer ownership
@@ -251,10 +248,7 @@ export const applicationsRouter = createTRPCRouter({
 			});
 
 			if (!cabinetProfile) {
-				throw new TRPCError({
-					code: "NOT_FOUND",
-					message: "Profil cabinet non trouvé",
-				});
+				return []; // Return empty array when profile doesn't exist yet
 			}
 
 			// Use proper JOIN to get applications for cabinet's job offers
@@ -505,7 +499,13 @@ export const applicationsRouter = createTRPCRouter({
 		});
 
 		if (!cabinetProfile) {
-			return []; // Return empty array when profile doesn't exist yet
+			return {
+				total: 0,
+				sent: 0,
+				viewed: 0,
+				accepted: 0,
+				rejected: 0,
+			}; // Return empty stats when profile doesn't exist yet
 		}
 
 		// Get all applications for this cabinet's job offers

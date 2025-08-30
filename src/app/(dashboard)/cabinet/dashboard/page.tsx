@@ -28,6 +28,17 @@ export default function CabinetDashboardPage() {
 		api.analytics.getCabinetRecentActivity.useQuery({
 			limit: 3,
 		});
+
+	// Fetch recent job offers from database
+	const { data: jobOffersData } = api.jobOffers.getByCabinet.useQuery({
+		limit: 3,
+	});
+
+	const recentJobOffers =
+		jobOffersData?.map((offer) => ({
+			...offer,
+			applicationCount: offer.applications?.length || 0,
+		})) || [];
 	const { data: unreadMessages } = api.messages.getUnreadCount.useQuery();
 
 	return (
@@ -148,28 +159,68 @@ export default function CabinetDashboardPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="space-y-4">
-							{[1, 2, 3].map((item) => (
-								<div key={item} className="flex items-center space-x-4">
-									<div className="flex-1 space-y-1">
-										<p className="font-medium text-sm leading-none">
-											Remplacement Médecine Générale - Urgence
-										</p>
-										<p className="text-muted-foreground text-sm">
-											Paris 15e • 15-20 Janvier 2025 • 70% rétrocession
-										</p>
+							{recentJobOffers.length > 0 ? (
+								recentJobOffers.map((offer) => (
+									<div key={offer.id} className="flex items-center space-x-4">
+										<div className="flex-1 space-y-1">
+											<p className="font-medium text-sm leading-none">
+												{offer.title}
+											</p>
+											<p className="text-muted-foreground text-sm">
+												{offer.location} •{" "}
+												{new Date(offer.startDate).toLocaleDateString("fr-FR")}{" "}
+												- {new Date(offer.endDate).toLocaleDateString("fr-FR")}{" "}
+												• {Number(offer.retrocessionRate)}% rétrocession
+											</p>
+										</div>
+										<div className="flex items-center space-x-2">
+											<Badge variant="secondary">
+												{offer.applicationCount} candidatures
+											</Badge>
+											<Badge
+												variant={
+													offer.status === "PUBLISHED"
+														? "default"
+														: offer.status === "DRAFT"
+															? "outline"
+															: "secondary"
+												}
+											>
+												{offer.status === "PUBLISHED"
+													? "Publié"
+													: offer.status === "DRAFT"
+														? "Brouillon"
+														: offer.status === "FILLED"
+															? "Pourvu"
+															: "Archivé"}
+											</Badge>
+										</div>
 									</div>
-									<div className="flex items-center space-x-2">
-										<Badge variant="secondary">5 candidatures</Badge>
-										<Badge variant="outline">Publié</Badge>
-									</div>
+								))
+							) : (
+								<div className="flex flex-col items-center justify-center py-8 text-center">
+									<Icons.briefcase className="mb-4 h-12 w-12 text-muted-foreground" />
+									<h3 className="mb-2 font-semibold text-lg">Aucune annonce</h3>
+									<p className="mb-4 text-muted-foreground text-sm">
+										Vous n'avez pas encore publié d'annonces de remplacement.
+									</p>
+									<Button asChild size="sm">
+										<Link href="/cabinet/job-offers/new">
+											Créer ma première annonce
+										</Link>
+									</Button>
 								</div>
-							))}
+							)}
 						</div>
-						<div className="mt-4">
-							<Button asChild variant="outline" className="w-full">
-								<Link href="/cabinet/job-offers">Voir toutes mes annonces</Link>
-							</Button>
-						</div>
+						{recentJobOffers.length > 0 && (
+							<div className="mt-4">
+								<Button asChild variant="outline" className="w-full">
+									<Link href="/cabinet/job-offers">
+										Voir toutes mes annonces
+									</Link>
+								</Button>
+							</div>
+						)}
 					</CardContent>
 				</Card>
 
