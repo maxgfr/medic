@@ -34,12 +34,91 @@ type Provider = {
 	callbackUrl: string;
 };
 
-export default function LoginPage() {
+type UserRole = "DOCTOR" | "CABINET";
+
+interface AuthFormProps {
+	type: "login" | "register";
+	userRole: UserRole;
+	title: string;
+	description: string;
+	successRedirect: string;
+	registerLink: string;
+	loginLink: string;
+	alternativeRole: UserRole;
+	alternativeLoginLink: string;
+	alternativeRegisterLink: string;
+}
+
+const AUTH_CONFIG: Record<
+	UserRole,
+	{
+		login: {
+			title: string;
+			description: string;
+			successRedirect: string;
+			registerLink: string;
+			alternativeText: string;
+			alternativeLink: string;
+		};
+		register: {
+			title: string;
+			description: string;
+			successRedirect: string;
+			loginLink: string;
+			alternativeText: string;
+			alternativeLink: string;
+		};
+	}
+> = {
+	DOCTOR: {
+		login: {
+			title: "Connexion Médecin",
+			description:
+				"Connectez-vous à votre compte médecin pour rechercher des remplacements",
+			successRedirect: "/doctor/dashboard",
+			registerLink: "/register-doctor",
+			alternativeText: "Vous êtes un cabinet médical ?",
+			alternativeLink: "/login-cabinet",
+		},
+		register: {
+			title: "Inscription Médecin",
+			description:
+				"Créez votre compte médecin pour rechercher des remplacements",
+			successRedirect: "/login-doctor",
+			loginLink: "/login-doctor",
+			alternativeText: "Vous êtes un cabinet médical ?",
+			alternativeLink: "/register-cabinet",
+		},
+	},
+	CABINET: {
+		login: {
+			title: "Connexion Cabinet",
+			description:
+				"Connectez-vous à votre compte cabinet pour publier des offres de remplacement",
+			successRedirect: "/cabinet/dashboard",
+			registerLink: "/register-cabinet",
+			alternativeText: "Vous êtes un médecin ?",
+			alternativeLink: "/login-doctor",
+		},
+		register: {
+			title: "Inscription Cabinet",
+			description:
+				"Créez votre compte cabinet pour publier des offres de remplacement",
+			successRedirect: "/login-cabinet",
+			loginLink: "/login-cabinet",
+			alternativeText: "Vous êtes un médecin ?",
+			alternativeLink: "/register-doctor",
+		},
+	},
+};
+
+export function AuthLoginForm({ userRole }: { userRole: UserRole }) {
 	const [providers, setProviders] = useState<Record<string, Provider> | null>(
 		null,
 	);
 	const [isLoading, setIsLoading] = useState<string | null>(null);
 	const router = useRouter();
+	const config = AUTH_CONFIG[userRole].login;
 
 	const form = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
@@ -69,7 +148,7 @@ export default function LoginPage() {
 				toast.error("Email ou mot de passe incorrect");
 			} else if (result?.ok) {
 				toast.success("Connexion réussie !");
-				router.push("/dashboard");
+				router.push(config.successRedirect);
 			}
 		} catch (error) {
 			toast.error("Erreur lors de la connexion");
@@ -81,7 +160,8 @@ export default function LoginPage() {
 	const handleProviderSignIn = async (providerId: string) => {
 		setIsLoading(providerId);
 		try {
-			await signIn(providerId, { callbackUrl: "/dashboard" });
+			localStorage.setItem("userRole", userRole);
+			await signIn(providerId, { callbackUrl: config.successRedirect });
 		} catch (error) {
 			console.error("Error signing in:", error);
 		} finally {
@@ -92,9 +172,9 @@ export default function LoginPage() {
 	return (
 		<Card>
 			<CardHeader className="space-y-1">
-				<CardTitle className="text-center text-2xl">Connexion</CardTitle>
+				<CardTitle className="text-center text-2xl">{config.title}</CardTitle>
 				<CardDescription className="text-center">
-					Connectez-vous à votre compte Medic Remplacement
+					{config.description}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="grid gap-4">
@@ -188,7 +268,7 @@ export default function LoginPage() {
 					</div>
 					<div className="relative flex justify-center text-xs uppercase">
 						<span className="bg-background px-2 text-muted-foreground">
-							Nouvelle inscription
+							{userRole === "DOCTOR" ? "Nouveau médecin" : "Nouveau cabinet"}
 						</span>
 					</div>
 				</div>
@@ -196,12 +276,25 @@ export default function LoginPage() {
 				<Button
 					variant="ghost"
 					className="w-full"
-					onClick={() => {
-						router.push("/register");
-					}}
+					onClick={() => router.push(config.registerLink)}
 				>
-					Créer un nouveau compte
+					{userRole === "DOCTOR"
+						? "Créer un compte médecin"
+						: "Créer un compte cabinet"}
 				</Button>
+
+				<div className="text-center text-muted-foreground text-sm">
+					{config.alternativeText}{" "}
+					<Button
+						variant="link"
+						className="h-auto p-0 font-medium"
+						onClick={() => router.push(config.alternativeLink)}
+					>
+						{userRole === "DOCTOR"
+							? "Se connecter en tant que cabinet"
+							: "Se connecter en tant que médecin"}
+					</Button>
+				</div>
 			</CardContent>
 		</Card>
 	);
