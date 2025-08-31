@@ -34,6 +34,9 @@ export type NewMessage = typeof messages.$inferInsert;
 export type Specialty = typeof specialties.$inferSelect;
 export type NewSpecialty = typeof specialties.$inferInsert;
 
+// Status types
+export type CabinetStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 // Extended types with relations
 export type UserWithProfile = User & {
 	cabinetProfile?: CabinetProfile;

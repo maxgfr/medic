@@ -115,59 +115,92 @@ export const specialties = createTable("specialty", (d) => ({
 }));
 
 // Cabinet profiles table
-export const cabinetProfiles = createTable("cabinet_profile", (d) => ({
-	id: d
-		.varchar({ length: 255 })
-		.notNull()
-		.primaryKey()
-		.$defaultFn(() => crypto.randomUUID()),
-	userId: d
-		.varchar({ length: 255 })
-		.notNull()
-		.references(() => users.id)
-		.unique(),
-	cabinetName: d.varchar({ length: 255 }).notNull(),
-	address: d.text().notNull(),
-	phone: d.varchar({ length: 50 }).notNull(),
-	description: d.text(),
-	specialties: d.json().$type<string[]>().notNull(),
-	photos: d.json().$type<string[]>().default([]),
-	latitude: d.real(),
-	longitude: d.real(),
-	createdAt: d
-		.timestamp({ withTimezone: true })
-		.default(sql`CURRENT_TIMESTAMP`)
-		.notNull(),
-	updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
-}));
+export const cabinetProfiles = createTable(
+	"cabinet_profile",
+	(d) => ({
+		id: d
+			.varchar({ length: 255 })
+			.notNull()
+			.primaryKey()
+			.$defaultFn(() => crypto.randomUUID()),
+		userId: d
+			.varchar({ length: 255 })
+			.notNull()
+			.references(() => users.id)
+			.unique(),
+		cabinetName: d.varchar({ length: 255 }).notNull(),
+		address: d.text().notNull(),
+		phone: d.varchar({ length: 50 }).notNull(),
+		description: d.text(),
+		specialties: d.json().$type<string[]>().notNull(),
+		photos: d.json().$type<string[]>().default([]),
+		latitude: d.real(),
+		longitude: d.real(),
+		status: d
+			.varchar({ length: 20 })
+			.$type<"PENDING" | "APPROVED" | "REJECTED">()
+			.notNull()
+			.default("PENDING"),
+		adminNotes: d.text(),
+		approvedAt: d.timestamp({ withTimezone: true }),
+		approvedBy: d.varchar({ length: 255 }),
+		createdAt: d
+			.timestamp({ withTimezone: true })
+			.default(sql`CURRENT_TIMESTAMP`)
+			.notNull(),
+		updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+	}),
+	(t) => [
+		index("cabinet_profile_user_id_idx").on(t.userId),
+		index("cabinet_profile_status_idx").on(t.status),
+	],
+);
 
 // Doctor profiles table
-export const doctorProfiles = createTable("doctor_profile", (d) => ({
-	id: d
-		.varchar({ length: 255 })
-		.notNull()
-		.primaryKey()
-		.$defaultFn(() => crypto.randomUUID()),
-	userId: d
-		.varchar({ length: 255 })
-		.notNull()
-		.references(() => users.id)
-		.unique(),
-	firstName: d.varchar({ length: 255 }).notNull(),
-	lastName: d.varchar({ length: 255 }).notNull(),
-	specialties: d.json().$type<string[]>().notNull(),
-	experienceYears: d.integer().notNull(),
-	preferredLocations: d.json().$type<PreferredLocation[]>().notNull(),
-	documents: d.json().$type<string[]>().default([]),
-	generalAvailability: d.json().$type<GeneralAvailability>().notNull(),
-	specificAvailabilities: d.json().$type<SpecificAvailability[]>().default([]),
-	preferredRate: d.numeric({ precision: 10, scale: 2 }),
-	createdAt: d
-		.timestamp({ withTimezone: true })
-		.default(sql`CURRENT_TIMESTAMP`)
-		.notNull(),
-	updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
-}));
+export const doctorProfiles = createTable(
+	"doctor_profile",
+	(d) => ({
+		id: d
+			.varchar({ length: 255 })
+			.notNull()
+			.primaryKey()
+			.$defaultFn(() => crypto.randomUUID()),
+		userId: d
+			.varchar({ length: 255 })
+			.notNull()
+			.references(() => users.id)
+			.unique(),
+		firstName: d.varchar({ length: 255 }).notNull(),
+		lastName: d.varchar({ length: 255 }).notNull(),
+		specialties: d.json().$type<string[]>().notNull(),
+		experienceYears: d.integer().notNull(),
+		preferredLocations: d.json().$type<PreferredLocation[]>().notNull(),
+		documents: d.json().$type<string[]>().default([]),
+		generalAvailability: d.json().$type<GeneralAvailability>().notNull(),
+		specificAvailabilities: d
+			.json()
+			.$type<SpecificAvailability[]>()
+			.default([]),
+		preferredRate: d.numeric({ precision: 10, scale: 2 }),
+		status: d
+			.varchar({ length: 20 })
+			.$type<"PENDING" | "APPROVED" | "REJECTED">()
+			.notNull()
+			.default("PENDING"),
+		adminNotes: d.text(),
+		approvedAt: d.timestamp({ withTimezone: true }),
+		approvedBy: d.varchar({ length: 255 }),
+		createdAt: d
+			.timestamp({ withTimezone: true })
+			.default(sql`CURRENT_TIMESTAMP`)
+			.notNull(),
+		updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
+	}),
+	(t) => [
+		index("doctor_profile_user_id_idx").on(t.userId),
+		index("doctor_profile_status_idx").on(t.status),
+	],
+);
 
 // Job offers table
 export const jobOffers = createTable(

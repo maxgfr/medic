@@ -41,6 +41,67 @@ export default function CabinetDashboardPage() {
 		})) || [];
 	const { data: unreadMessages } = api.messages.getUnreadCount.useQuery();
 
+	// Handle validation status
+	if (profileCompletion?.isPending) {
+		return (
+			<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+				<Card className="border-yellow-200 bg-yellow-50">
+					<CardHeader className="text-center">
+						<CardTitle className="text-yellow-800">
+							Profil en cours de validation
+						</CardTitle>
+						<CardDescription>
+							Votre profil est en attente de validation par notre équipe
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="text-center">
+						<Icons.clock className="mx-auto mb-4 h-16 w-16 text-yellow-600" />
+						<p className="mb-4 text-yellow-700">
+							Votre accès au dashboard sera activé dès que votre profil sera
+							approuvé.
+						</p>
+						<Button asChild variant="outline">
+							<Link href="/cabinet/validation-pending">
+								Voir le statut de validation
+							</Link>
+						</Button>
+					</CardContent>
+				</Card>
+			</div>
+		);
+	}
+
+	if (profileCompletion?.isRejected) {
+		return (
+			<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
+				<Card className="border-red-200 bg-red-50">
+					<CardHeader className="text-center">
+						<CardTitle className="text-red-800">Profil non validé</CardTitle>
+						<CardDescription>
+							Votre profil a été rejeté et nécessite des modifications
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="text-center">
+						<Icons.xCircle className="mx-auto mb-4 h-16 w-16 text-red-600" />
+						<p className="mb-4 text-red-700">
+							Consultez les remarques de validation et modifiez votre profil.
+						</p>
+						<div className="space-x-2">
+							<Button asChild variant="outline">
+								<Link href="/cabinet/validation-rejected">
+									Voir les détails du rejet
+								</Link>
+							</Button>
+							<Button asChild>
+								<Link href="/cabinet/profile">Modifier mon profil</Link>
+							</Button>
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+		);
+	}
+
 	return (
 		<div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
 			<div className="flex items-center justify-between space-y-2">

@@ -57,8 +57,8 @@ export function CabinetProfileForm({
 
 	const createMutation = api.auth.createCabinetProfile.useMutation({
 		onSuccess: () => {
-			toast.success("Profil cabinet créé avec succès !");
-			router.push("/cabinet/dashboard");
+			toast.success("Profil cabinet soumis pour validation !");
+			router.push("/cabinet/validation-pending");
 		},
 		onError: (error) => {
 			toast.error(error.message || "Erreur lors de la création du profil");
@@ -69,13 +69,31 @@ export function CabinetProfileForm({
 	const updateMutation = api.auth.updateCabinetProfile.useMutation({
 		onSuccess: () => {
 			toast.success("Profil cabinet mis à jour avec succès !");
-			router.push("/cabinet/dashboard");
+			if (profileCompletion?.isRejected) {
+				// If profile was rejected, resubmit for validation
+				resubmitMutation.mutate();
+			} else {
+				router.push("/cabinet/dashboard");
+			}
 		},
 		onError: (error) => {
 			toast.error(error.message || "Erreur lors de la mise à jour du profil");
 			setIsLoading(false);
 		},
 	});
+
+	const resubmitMutation = api.auth.resubmitCabinetProfile.useMutation({
+		onSuccess: () => {
+			toast.success("Profil re-soumis pour validation !");
+			router.push("/cabinet/validation-pending");
+		},
+		onError: (error) => {
+			toast.error(error.message || "Erreur lors de la re-soumission");
+			setIsLoading(false);
+		},
+	});
+
+	const { data: profileCompletion } = api.auth.getProfileCompletion.useQuery();
 
 	function onSubmit(values: CabinetProfileFormData) {
 		setIsLoading(true);
@@ -92,6 +110,53 @@ export function CabinetProfileForm({
 	return (
 		<Form {...form}>
 			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+				{/* Validation Information */}
+				{!isEditing && (
+					<Card className="border-blue-200 bg-blue-50">
+						<CardContent className="pt-6">
+							<div className="flex items-start space-x-3">
+								<Icons.info className="mt-0.5 h-5 w-5 text-blue-600" />
+								<div>
+									<h4 className="font-medium text-blue-900">
+										Validation requise
+									</h4>
+									<p className="mt-1 text-blue-700 text-sm">
+										Votre profil cabinet sera soumis pour validation par notre
+										équipe avant activation. Ce processus prend généralement 24
+										à 48 heures.
+									</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				)}
+
+				{/* Rejection Information */}
+				{isEditing && profileCompletion?.isRejected && (
+					<Card className="border-red-200 bg-red-50">
+						<CardContent className="pt-6">
+							<div className="flex items-start space-x-3">
+								<Icons.xCircle className="mt-0.5 h-5 w-5 text-red-600" />
+								<div>
+									<h4 className="font-medium text-red-900">Profil rejeté</h4>
+									<p className="mt-1 text-red-700 text-sm">
+										Modifiez votre profil selon les remarques ci-dessous et
+										re-soumettez-le pour validation.
+									</p>
+									{profileCompletion.adminNotes && (
+										<div className="mt-3 rounded border border-red-200 bg-white p-3">
+											<p className="text-gray-700 text-sm">
+												<strong>Remarques:</strong>{" "}
+												{profileCompletion.adminNotes}
+											</p>
+										</div>
+									)}
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				)}
+
 				{/* Basic Information */}
 				<Card>
 					<CardHeader>
@@ -245,12 +310,16 @@ export function CabinetProfileForm({
 						{isLoading ? (
 							<>
 								<Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-								{isEditing ? "Mise à jour..." : "Création..."}
+								{isEditing ? "Mise à jour..." : "Soumission..."}
 							</>
 						) : (
 							<>
 								<Icons.checkCircle className="mr-2 h-4 w-4" />
-								{isEditing ? "Mettre à jour" : "Créer le profil"}
+								{isEditing
+									? profileCompletion?.isRejected
+										? "Re-soumettre pour validation"
+										: "Mettre à jour"
+									: "Soumettre pour validation"}
 							</>
 						)}
 					</Button>

@@ -297,8 +297,17 @@ export const authRouter = createTRPCRouter({
 					completionPercentage: 0,
 					missingFields: ["Complete profile setup"],
 					isComplete: false,
+					status: null,
+					isPending: false,
+					isApproved: false,
+					isRejected: false,
 				};
 			}
+
+			// Check validation status
+			const isPending = profile.status === "PENDING";
+			const isApproved = profile.status === "APPROVED";
+			const isRejected = profile.status === "REJECTED";
 
 			const fields = [
 				{ name: "Cabinet name", value: profile.cabinetName },
@@ -316,15 +325,37 @@ export const authRouter = createTRPCRouter({
 			for (const field of fields) {
 				if (!field.value) missingFields.push(field.name);
 			}
-		} else if (user.role === "DOCTOR") {
+
+			return {
+				completionPercentage,
+				missingFields,
+				isComplete: completionPercentage === 100,
+				status: profile.status,
+				isPending,
+				isApproved,
+				isRejected,
+				adminNotes: profile.adminNotes,
+			};
+		}
+
+		if (user.role === "DOCTOR") {
 			const profile = user.doctorProfile;
 			if (!profile) {
 				return {
 					completionPercentage: 0,
 					missingFields: ["Complete profile setup"],
 					isComplete: false,
+					status: null,
+					isPending: false,
+					isApproved: false,
+					isRejected: false,
 				};
 			}
+
+			// Check validation status
+			const isPending = profile.status === "PENDING";
+			const isApproved = profile.status === "APPROVED";
+			const isRejected = profile.status === "REJECTED";
 
 			const fields = [
 				{ name: "First name", value: profile.firstName },
@@ -352,12 +383,27 @@ export const authRouter = createTRPCRouter({
 			for (const field of fields) {
 				if (!field.value) missingFields.push(field.name);
 			}
+
+			return {
+				completionPercentage,
+				missingFields,
+				isComplete: completionPercentage === 100,
+				status: profile.status,
+				isPending,
+				isApproved,
+				isRejected,
+				adminNotes: profile.adminNotes,
+			};
 		}
 
 		return {
-			completionPercentage,
-			missingFields,
-			isComplete: completionPercentage === 100,
+			completionPercentage: 0,
+			missingFields: [],
+			isComplete: false,
+			status: null,
+			isPending: false,
+			isApproved: false,
+			isRejected: false,
 		};
 	}),
 
@@ -369,5 +415,187 @@ export const authRouter = createTRPCRouter({
 				asc(specialties.name),
 			],
 		});
+	}),
+
+	// Admin routes for cabinet validation
+	getPendingCabinets: protectedProcedure.query(async ({ ctx }) => {
+		// TODO: Add admin role check once admin system is implemented
+		return await ctx.db.query.cabinetProfiles.findMany({
+			where: eq(cabinetProfiles.status, "PENDING"),
+			with: {
+				user: true,
+			},
+			orderBy: (cabinetProfiles, { asc }) => [asc(cabinetProfiles.createdAt)],
+		});
+	}),
+
+	approveCabinet: protectedProcedure
+		.input(
+			z.object({
+				cabinetId: z.string(),
+				adminNotes: z.string().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			// TODO: Add admin role check once admin system is implemented
+			const [updatedProfile] = await ctx.db
+				.update(cabinetProfiles)
+				.set({
+					status: "APPROVED",
+					adminNotes: input.adminNotes,
+					approvedAt: new Date(),
+					approvedBy: ctx.session.user.id,
+				})
+				.where(eq(cabinetProfiles.id, input.cabinetId))
+				.returning();
+
+			return updatedProfile;
+		}),
+
+	rejectCabinet: protectedProcedure
+		.input(
+			z.object({
+				cabinetId: z.string(),
+				adminNotes: z.string().min(1, "Une raison de rejet est requise"),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			// TODO: Add admin role check once admin system is implemented
+			const [updatedProfile] = await ctx.db
+				.update(cabinetProfiles)
+				.set({
+					status: "REJECTED",
+					adminNotes: input.adminNotes,
+					approvedBy: ctx.session.user.id,
+				})
+				.where(eq(cabinetProfiles.id, input.cabinetId))
+				.returning();
+
+			return updatedProfile;
+		}),
+
+	// Resubmit cabinet profile for validation (for rejected profiles)
+	resubmitCabinetProfile: protectedProcedure.mutation(async ({ ctx }) => {
+		const cabinetProfile = await ctx.db.query.cabinetProfiles.findFirst({
+			where: eq(cabinetProfiles.userId, ctx.session.user.id),
+		});
+
+		if (!cabinetProfile) {
+			throw new TRPCError({
+				code: "NOT_FOUND",
+				message: "Profil cabinet non trouvé",
+			});
+		}
+
+		if (cabinetProfile.status !== "REJECTED") {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: "Seuls les profils rejetés peuvent être re-soumis",
+			});
+		}
+
+		const [updatedProfile] = await ctx.db
+			.update(cabinetProfiles)
+			.set({
+				status: "PENDING",
+				adminNotes: null,
+				approvedAt: null,
+				approvedBy: null,
+			})
+			.where(eq(cabinetProfiles.userId, ctx.session.user.id))
+			.returning();
+
+		return updatedProfile;
+	}),
+
+	// Admin routes for doctor validation
+	getPendingDoctors: protectedProcedure.query(async ({ ctx }) => {
+		// TODO: Add admin role check once admin system is implemented
+		return await ctx.db.query.doctorProfiles.findMany({
+			where: eq(doctorProfiles.status, "PENDING"),
+			with: {
+				user: true,
+			},
+			orderBy: (doctorProfiles, { asc }) => [asc(doctorProfiles.createdAt)],
+		});
+	}),
+
+	approveDoctor: protectedProcedure
+		.input(
+			z.object({
+				doctorId: z.string(),
+				adminNotes: z.string().optional(),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			// TODO: Add admin role check once admin system is implemented
+			const [updatedProfile] = await ctx.db
+				.update(doctorProfiles)
+				.set({
+					status: "APPROVED",
+					adminNotes: input.adminNotes,
+					approvedAt: new Date(),
+					approvedBy: ctx.session.user.id,
+				})
+				.where(eq(doctorProfiles.id, input.doctorId))
+				.returning();
+
+			return updatedProfile;
+		}),
+
+	rejectDoctor: protectedProcedure
+		.input(
+			z.object({
+				doctorId: z.string(),
+				adminNotes: z.string().min(1, "Une raison de rejet est requise"),
+			}),
+		)
+		.mutation(async ({ ctx, input }) => {
+			// TODO: Add admin role check once admin system is implemented
+			const [updatedProfile] = await ctx.db
+				.update(doctorProfiles)
+				.set({
+					status: "REJECTED",
+					adminNotes: input.adminNotes,
+					approvedBy: ctx.session.user.id,
+				})
+				.where(eq(doctorProfiles.id, input.doctorId))
+				.returning();
+
+			return updatedProfile;
+		}),
+
+	// Resubmit doctor profile for validation (for rejected profiles)
+	resubmitDoctorProfile: protectedProcedure.mutation(async ({ ctx }) => {
+		const doctorProfile = await ctx.db.query.doctorProfiles.findFirst({
+			where: eq(doctorProfiles.userId, ctx.session.user.id),
+		});
+
+		if (!doctorProfile) {
+			throw new TRPCError({
+				code: "NOT_FOUND",
+				message: "Profil médecin non trouvé",
+			});
+		}
+
+		if (doctorProfile.status !== "REJECTED") {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: "Seuls les profils rejetés peuvent être re-soumis",
+			});
+		}
+
+		const [updatedProfile] = await ctx.db
+			.update(doctorProfiles)
+			.set({
+				status: "PENDING",
+				adminNotes: null,
+				approvedAt: null,
+				approvedBy: null,
+			})
+			.where(eq(doctorProfiles.userId, ctx.session.user.id))
+			.returning();
+
+		return updatedProfile;
 	}),
 });

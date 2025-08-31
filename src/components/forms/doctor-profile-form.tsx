@@ -94,6 +94,19 @@ export function DoctorProfileForm({
 		},
 	});
 
+	const resubmitMutation = api.auth.resubmitDoctorProfile.useMutation({
+		onSuccess: () => {
+			toast.success("Profil re-soumis pour validation !");
+			router.push("/doctor/validation-pending");
+		},
+		onError: (error) => {
+			toast.error(error.message || "Erreur lors de la re-soumission");
+			setIsLoading(false);
+		},
+	});
+
+	const { data: profileCompletion } = api.auth.getProfileCompletion.useQuery();
+
 	function onSubmit(values: DoctorProfileFormData) {
 		setIsLoading(true);
 
@@ -121,6 +134,54 @@ export function DoctorProfileForm({
 			<CardContent>
 				<Form {...form}>
 					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+						{/* Validation Information */}
+						{!isEditing && (
+							<Card className="border-blue-200 bg-blue-50">
+								<CardContent className="pt-6">
+									<div className="flex items-start space-x-3">
+										<Icons.info className="mt-0.5 h-5 w-5 text-blue-600" />
+										<div>
+											<h4 className="font-medium text-blue-900">
+												Validation requise
+											</h4>
+											<p className="mt-1 text-blue-700 text-sm">
+												Votre profil médecin sera soumis pour validation par
+												notre équipe avant activation. Ce processus prend
+												généralement 24 à 72 heures.
+											</p>
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+						)}
+
+						{/* Rejection Information */}
+						{isEditing && profileCompletion?.isRejected && (
+							<Card className="border-red-200 bg-red-50">
+								<CardContent className="pt-6">
+									<div className="flex items-start space-x-3">
+										<Icons.xCircle className="mt-0.5 h-5 w-5 text-red-600" />
+										<div>
+											<h4 className="font-medium text-red-900">
+												Profil rejeté
+											</h4>
+											<p className="mt-1 text-red-700 text-sm">
+												Modifiez votre profil selon les remarques ci-dessous et
+												re-soumettez-le pour validation.
+											</p>
+											{profileCompletion.adminNotes && (
+												<div className="mt-3 rounded border border-red-200 bg-white p-3">
+													<p className="text-gray-700 text-sm">
+														<strong>Remarques:</strong>{" "}
+														{profileCompletion.adminNotes}
+													</p>
+												</div>
+											)}
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+						)}
 						{/* Personal Information */}
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 							<FormField
@@ -329,12 +390,30 @@ export function DoctorProfileForm({
 							)}
 						/>
 
-						<Button type="submit" className="w-full" disabled={isLoading}>
-							{isLoading && (
-								<Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+						<div className="flex gap-4">
+							<Button type="submit" className="flex-1" disabled={isLoading}>
+								{isLoading && (
+									<Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+								)}
+								{isEditing ? "Mettre à jour" : "Créer le profil"}
+							</Button>
+
+							{/* Re-submit button for rejected profiles */}
+							{isEditing && profileCompletion?.isRejected && (
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => resubmitMutation.mutate()}
+									disabled={resubmitMutation.isPending}
+									className="flex-1"
+								>
+									{resubmitMutation.isPending && (
+										<Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+									)}
+									Re-soumettre
+								</Button>
 							)}
-							{isEditing ? "Mettre à jour" : "Créer le profil"}
-						</Button>
+						</div>
 					</form>
 				</Form>
 			</CardContent>

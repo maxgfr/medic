@@ -12,6 +12,8 @@ export const env = createEnv({
 				? z.string()
 				: z.string().optional(),
 		DATABASE_URL: z.string().url(),
+		ADMIN_ACCESS_CODE: z.string(),
+		ADMIN_JWT_SECRET: z.string(),
 		NODE_ENV: z
 			.enum(["development", "test", "production"])
 			.default("development"),
@@ -33,6 +35,8 @@ export const env = createEnv({
 	runtimeEnv: {
 		AUTH_SECRET: process.env.AUTH_SECRET,
 		DATABASE_URL: process.env.DATABASE_URL,
+		ADMIN_ACCESS_CODE: process.env.ADMIN_ACCESS_CODE,
+		ADMIN_JWT_SECRET: process.env.ADMIN_JWT_SECRET,
 		NODE_ENV: process.env.NODE_ENV,
 	},
 	/**

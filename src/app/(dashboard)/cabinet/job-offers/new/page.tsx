@@ -141,15 +141,6 @@ export default function NewJobOfferPage() {
 		<div className="container mx-auto max-w-4xl py-8">
 			{/* Header */}
 			<div className="mb-8 flex items-center gap-4">
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={() => router.back()}
-					className="flex items-center gap-2"
-				>
-					<ChevronLeft className="h-4 w-4" />
-					Retour
-				</Button>
 				<div>
 					<h1 className="font-bold text-3xl tracking-tight">
 						Nouvelle annonce
@@ -161,291 +152,310 @@ export default function NewJobOfferPage() {
 			</div>
 
 			{/* Profile completion warning */}
-			{profileCompletion && !profileCompletion.isComplete && (
-				<Card className="mb-6 border-yellow-200 bg-yellow-50">
-					<CardContent className="flex items-center justify-between p-4">
-						<div className="flex items-center space-x-2">
-							<div className="rounded-full bg-yellow-100 p-2">
-								<Icons.alertCircle className="h-5 w-5 text-yellow-600" />
-							</div>
-							<div>
-								<p className="font-medium text-yellow-800">
-									Profil incomplet ({profileCompletion.completionPercentage}%)
-								</p>
-								<p className="text-sm text-yellow-600">
-									Vous devez compléter votre profil à 100% pour publier une
-									annonce.
-									<br />
-									Éléments manquants :{" "}
-									{profileCompletion.missingFields.join(", ")}
-								</p>
-							</div>
+			{profileCompletion && !profileCompletion.isComplete ? (
+				<Card className="border-yellow-200 bg-yellow-50">
+					<CardContent className="p-8 text-center">
+						<div className="mx-auto mb-4 w-fit rounded-full bg-yellow-100 p-4">
+							<Icons.alertCircle className="h-8 w-8 text-yellow-600" />
 						</div>
-						<Button asChild variant="outline" size="sm">
-							<Link href="/cabinet/profile">Compléter le profil</Link>
-						</Button>
-					</CardContent>
-				</Card>
-			)}
-
-			<form onSubmit={handleSubmit} className="space-y-6">
-				{/* Informations principales */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<Stethoscope className="h-5 w-5" />
-							Informations principales
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div className="space-y-2">
-								<Label htmlFor="title">Titre de l'annonce *</Label>
-								<Input
-									id="title"
-									value={formData.title}
-									onChange={(e) =>
-										setFormData((prev) => ({ ...prev, title: e.target.value }))
-									}
-									placeholder="ex: Remplacement médecin généraliste"
-									required
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="specialty">Spécialité *</Label>
-								<Select
-									value={formData.specialty}
-									onValueChange={(value) =>
-										setFormData((prev) => ({
-											...prev,
-											specialty: value as MedicalSpecialty,
-										}))
-									}
-								>
-									<SelectTrigger>
-										<SelectValue placeholder="Sélectionner une spécialité" />
-									</SelectTrigger>
-									<SelectContent>
-										{MEDICAL_SPECIALTIES.map((specialty) => (
-											<SelectItem key={specialty.id} value={specialty.id}>
-												{specialty.name}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
+						<h2 className="mb-2 font-semibold text-xl text-yellow-800">
+							Profil incomplet
+						</h2>
+						<p className="mb-4 text-yellow-700">
+							Vous devez compléter votre profil à 100% avant de pouvoir créer
+							une annonce.
+						</p>
+						<div className="mb-6 rounded-lg bg-yellow-100 p-4">
+							<p className="mb-2 font-medium text-yellow-800">
+								Progression actuelle : {profileCompletion.completionPercentage}%
+							</p>
+							<p className="text-sm text-yellow-700">
+								<strong>Éléments manquants :</strong>{" "}
+								{profileCompletion.missingFields.join(", ")}
+							</p>
 						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="location">Localisation *</Label>
-							<div className="relative">
-								<MapPin className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
-								<Input
-									id="location"
-									value={formData.location}
-									onChange={(e) =>
-										setFormData((prev) => ({
-											...prev,
-											location: e.target.value,
-										}))
-									}
-									placeholder="Ville, région ou adresse complète"
-									className="pl-10"
-									required
-								/>
-							</div>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="description">Description</Label>
-							<Textarea
-								id="description"
-								value={formData.description}
-								onChange={(e) =>
-									setFormData((prev) => ({
-										...prev,
-										description: e.target.value,
-									}))
-								}
-								placeholder="Décrivez le poste, les missions, l'environnement de travail..."
-								rows={4}
-							/>
+						<div className="flex justify-center gap-4">
+							<Button asChild>
+								<Link href="/cabinet/profile">
+									<Icons.user className="mr-2 h-4 w-4" />
+									Compléter mon profil
+								</Link>
+							</Button>
 						</div>
 					</CardContent>
 				</Card>
-
-				{/* Période et conditions */}
-				<Card>
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<Calendar className="h-5 w-5" />
-							Période et conditions
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-							<div className="space-y-2">
-								<Label htmlFor="startDate">Date de début *</Label>
-								<Input
-									id="startDate"
-									type="date"
-									value={formData.startDate}
-									onChange={(e) =>
-										setFormData((prev) => ({
-											...prev,
-											startDate: e.target.value,
-										}))
-									}
-									required
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="endDate">Date de fin *</Label>
-								<Input
-									id="endDate"
-									type="date"
-									value={formData.endDate}
-									onChange={(e) =>
-										setFormData((prev) => ({
-											...prev,
-											endDate: e.target.value,
-										}))
-									}
-									required
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="type">Type de remplacement</Label>
-								<Select
-									value={formData.type}
-									onValueChange={(value: "URGENT" | "PLANNED" | "RECURRING") =>
-										setFormData((prev) => ({ ...prev, type: value }))
-									}
-								>
-									<SelectTrigger>
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="PLANNED">Planifié</SelectItem>
-										<SelectItem value="URGENT">Urgent</SelectItem>
-										<SelectItem value="RECURRING">Récurrent</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-						</div>
-
-						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-							<div className="space-y-2">
-								<Label htmlFor="retrocessionRate">
-									Taux de rétrocession (%)
-								</Label>
-								<div className="relative">
-									<DollarSign className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+			) : (
+				<form onSubmit={handleSubmit} className="space-y-6">
+					{/* Informations principales */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<Stethoscope className="h-5 w-5" />
+								Informations principales
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+								<div className="space-y-2">
+									<Label htmlFor="title">Titre de l'annonce *</Label>
 									<Input
-										id="retrocessionRate"
-										type="number"
-										min="0"
-										max="100"
-										value={formData.retrocessionRate}
+										id="title"
+										value={formData.title}
 										onChange={(e) =>
 											setFormData((prev) => ({
 												...prev,
-												retrocessionRate: Number(e.target.value),
+												title: e.target.value,
 											}))
 										}
+										placeholder="ex: Remplacement médecin généraliste"
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="specialty">Spécialité *</Label>
+									<Select
+										value={formData.specialty}
+										onValueChange={(value) =>
+											setFormData((prev) => ({
+												...prev,
+												specialty: value as MedicalSpecialty,
+											}))
+										}
+									>
+										<SelectTrigger>
+											<SelectValue placeholder="Sélectionner une spécialité" />
+										</SelectTrigger>
+										<SelectContent>
+											{MEDICAL_SPECIALTIES.map((specialty) => (
+												<SelectItem key={specialty.id} value={specialty.id}>
+													{specialty.name}
+												</SelectItem>
+											))}
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="location">Localisation *</Label>
+								<div className="relative">
+									<MapPin className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+									<Input
+										id="location"
+										value={formData.location}
+										onChange={(e) =>
+											setFormData((prev) => ({
+												...prev,
+												location: e.target.value,
+											}))
+										}
+										placeholder="Ville, région ou adresse complète"
 										className="pl-10"
+										required
 									/>
 								</div>
 							</div>
+
 							<div className="space-y-2">
-								<Label htmlFor="estimatedPatients">Patients estimés/jour</Label>
-								<Input
-									id="estimatedPatients"
-									type="number"
-									min="0"
-									value={formData.estimatedPatients}
+								<Label htmlFor="description">Description</Label>
+								<Textarea
+									id="description"
+									value={formData.description}
 									onChange={(e) =>
 										setFormData((prev) => ({
 											...prev,
-											estimatedPatients: Number(e.target.value),
+											description: e.target.value,
+										}))
+									}
+									placeholder="Décrivez le poste, les missions, l'environnement de travail..."
+									rows={4}
+								/>
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* Période et conditions */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2">
+								<Calendar className="h-5 w-5" />
+								Période et conditions
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+								<div className="space-y-2">
+									<Label htmlFor="startDate">Date de début *</Label>
+									<Input
+										id="startDate"
+										type="date"
+										value={formData.startDate}
+										onChange={(e) =>
+											setFormData((prev) => ({
+												...prev,
+												startDate: e.target.value,
+											}))
+										}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="endDate">Date de fin *</Label>
+									<Input
+										id="endDate"
+										type="date"
+										value={formData.endDate}
+										onChange={(e) =>
+											setFormData((prev) => ({
+												...prev,
+												endDate: e.target.value,
+											}))
+										}
+										required
+									/>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="type">Type de remplacement</Label>
+									<Select
+										value={formData.type}
+										onValueChange={(
+											value: "URGENT" | "PLANNED" | "RECURRING",
+										) => setFormData((prev) => ({ ...prev, type: value }))}
+									>
+										<SelectTrigger>
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="PLANNED">Planifié</SelectItem>
+											<SelectItem value="URGENT">Urgent</SelectItem>
+											<SelectItem value="RECURRING">Récurrent</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+
+							<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+								<div className="space-y-2">
+									<Label htmlFor="retrocessionRate">
+										Taux de rétrocession (%)
+									</Label>
+									<div className="relative">
+										<DollarSign className="absolute top-3 left-3 h-4 w-4 text-muted-foreground" />
+										<Input
+											id="retrocessionRate"
+											type="number"
+											min="0"
+											max="100"
+											value={formData.retrocessionRate}
+											onChange={(e) =>
+												setFormData((prev) => ({
+													...prev,
+													retrocessionRate: Number(e.target.value),
+												}))
+											}
+											className="pl-10"
+										/>
+									</div>
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="estimatedPatients">
+										Patients estimés/jour
+									</Label>
+									<Input
+										id="estimatedPatients"
+										type="number"
+										min="0"
+										value={formData.estimatedPatients}
+										onChange={(e) =>
+											setFormData((prev) => ({
+												...prev,
+												estimatedPatients: Number(e.target.value),
+											}))
+										}
+									/>
+								</div>
+							</div>
+
+							<div className="flex items-center space-x-2">
+								<Switch
+									id="housingProvided"
+									checked={formData.housingProvided}
+									onCheckedChange={(checked) =>
+										setFormData((prev) => ({
+											...prev,
+											housingProvided: checked,
 										}))
 									}
 								/>
+								<Label htmlFor="housingProvided">Logement fourni</Label>
 							</div>
-						</div>
+						</CardContent>
+					</Card>
 
-						<div className="flex items-center space-x-2">
-							<Switch
-								id="housingProvided"
-								checked={formData.housingProvided}
-								onCheckedChange={(checked) =>
-									setFormData((prev) => ({ ...prev, housingProvided: checked }))
-								}
-							/>
-							<Label htmlFor="housingProvided">Logement fourni</Label>
-						</div>
-					</CardContent>
-				</Card>
-
-				{/* Équipements */}
-				<Card>
-					<CardHeader>
-						<CardTitle>Équipements disponibles</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<div className="flex gap-2">
-							<Input
-								value={formData.equipmentInput}
-								onChange={(e) =>
-									setFormData((prev) => ({
-										...prev,
-										equipmentInput: e.target.value,
-									}))
-								}
-								placeholder="Ajouter un équipement"
-								onKeyPress={(e) => {
-									if (e.key === "Enter") {
-										e.preventDefault();
-										addEquipment();
+					{/* Équipements */}
+					<Card>
+						<CardHeader>
+							<CardTitle>Équipements disponibles</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div className="flex gap-2">
+								<Input
+									value={formData.equipmentInput}
+									onChange={(e) =>
+										setFormData((prev) => ({
+											...prev,
+											equipmentInput: e.target.value,
+										}))
 									}
-								}}
-							/>
-							<Button type="button" onClick={addEquipment} variant="outline">
-								Ajouter
-							</Button>
-						</div>
-						{formData.equipment.length > 0 && (
-							<div className="flex flex-wrap gap-2">
-								{formData.equipment.map((item, index) => (
-									<div
-										key={`equipment-${item}`}
-										className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-secondary-foreground text-sm"
-									>
-										{item}
-										<button
-											type="button"
-											onClick={() => removeEquipment(index)}
-											className="text-muted-foreground hover:text-foreground"
-										>
-											×
-										</button>
-									</div>
-								))}
+									placeholder="Ajouter un équipement"
+									onKeyPress={(e) => {
+										if (e.key === "Enter") {
+											e.preventDefault();
+											addEquipment();
+										}
+									}}
+								/>
+								<Button type="button" onClick={addEquipment} variant="outline">
+									Ajouter
+								</Button>
 							</div>
-						)}
-					</CardContent>
-				</Card>
+							{formData.equipment.length > 0 && (
+								<div className="flex flex-wrap gap-2">
+									{formData.equipment.map((item, index) => (
+										<div
+											key={`equipment-${item}`}
+											className="flex items-center gap-2 rounded-full bg-secondary px-3 py-1 text-secondary-foreground text-sm"
+										>
+											{item}
+											<button
+												type="button"
+												onClick={() => removeEquipment(index)}
+												className="text-muted-foreground hover:text-foreground"
+											>
+												×
+											</button>
+										</div>
+									))}
+								</div>
+							)}
+						</CardContent>
+					</Card>
 
-				{/* Actions */}
-				<div className="flex justify-end gap-4">
-					<Button type="button" variant="outline" onClick={() => router.back()}>
-						Annuler
-					</Button>
-					<Button type="submit" disabled={isSubmitting}>
-						{isSubmitting ? "Création..." : "Créer l'annonce"}
-					</Button>
-				</div>
-			</form>
+					{/* Actions */}
+					<div className="flex justify-end gap-4">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => router.back()}
+						>
+							Annuler
+						</Button>
+						<Button type="submit" disabled={isSubmitting}>
+							{isSubmitting ? "Création..." : "Créer l'annonce"}
+						</Button>
+					</div>
+				</form>
+			)}
 		</div>
 	);
 }

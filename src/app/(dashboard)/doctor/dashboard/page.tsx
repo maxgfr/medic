@@ -35,6 +35,68 @@ export default function DoctorDashboardPage() {
 				</div>
 			</div>
 
+			{/* Validation status banners */}
+			{profileCompletion?.isPending && (
+				<Card className="border-yellow-200 bg-yellow-50">
+					<CardContent className="flex items-center justify-between p-4">
+						<div className="flex items-center space-x-2">
+							<Icons.clock className="h-5 w-5 text-yellow-600" />
+							<div>
+								<p className="font-medium text-yellow-800">
+									Profil en cours de validation
+								</p>
+								<p className="text-sm text-yellow-600">
+									Votre profil médecin est en cours d'examen par notre équipe.
+								</p>
+							</div>
+						</div>
+						<Button asChild variant="outline" size="sm">
+							<Link href="/doctor/validation-pending">Voir le statut</Link>
+						</Button>
+					</CardContent>
+				</Card>
+			)}
+
+			{profileCompletion?.isRejected && (
+				<Card className="border-red-200 bg-red-50">
+					<CardContent className="flex items-center justify-between p-4">
+						<div className="flex items-center space-x-2">
+							<Icons.xCircle className="h-5 w-5 text-red-600" />
+							<div>
+								<p className="font-medium text-red-800">
+									Profil rejeté - Actions requises
+								</p>
+								<p className="text-red-600 text-sm">
+									Votre profil nécessite des modifications avant validation.
+								</p>
+							</div>
+						</div>
+						<Button asChild variant="outline" size="sm">
+							<Link href="/doctor/validation-rejected">Voir les détails</Link>
+						</Button>
+					</CardContent>
+				</Card>
+			)}
+
+			{profileCompletion?.isApproved && (
+				<Card className="border-green-200 bg-green-50">
+					<CardContent className="flex items-center justify-between p-4">
+						<div className="flex items-center space-x-2">
+							<Icons.checkCircle className="h-5 w-5 text-green-600" />
+							<div>
+								<p className="font-medium text-green-800">
+									Profil validé avec succès !
+								</p>
+								<p className="text-green-600 text-sm">
+									Votre profil médecin est approuvé. Vous avez accès à toutes
+									les fonctionnalités.
+								</p>
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+			)}
+
 			{/* Profile completion banner */}
 			{profileCompletion && !profileCompletion.isComplete && (
 				<Card className="border-yellow-200 bg-yellow-50">

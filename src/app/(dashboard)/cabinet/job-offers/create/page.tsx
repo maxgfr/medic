@@ -127,15 +127,6 @@ export default function CreateJobOfferPage() {
 		<div className="container mx-auto max-w-4xl py-8">
 			{/* Header */}
 			<div className="mb-8 flex items-center gap-4">
-				<Button
-					variant="ghost"
-					size="sm"
-					onClick={() => router.back()}
-					className="flex items-center gap-2"
-				>
-					<ChevronLeft className="h-4 w-4" />
-					Retour
-				</Button>
 				<div>
 					<h1 className="font-bold text-3xl tracking-tight">
 						Créer une annonce

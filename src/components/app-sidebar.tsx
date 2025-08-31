@@ -27,16 +27,26 @@ import {
 	SidebarRail,
 } from "~/components/ui/sidebar";
 import { ROUTES } from "~/lib/constants";
+import { api } from "~/trpc/react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { data: session } = useSession();
 	const pathname = usePathname();
+	const { data: profileCompletion } = api.auth.getProfileCompletion.useQuery();
 
 	if (!session) return null;
 
 	const userRole = session.user.role;
 	const cabinetRoutes = ROUTES.CABINET;
 	const doctorRoutes = ROUTES.DOCTOR;
+
+	// Check if cabinet is approved
+	const isCabinetApproved =
+		userRole !== "CABINET" || profileCompletion?.isApproved;
+
+	// Check if doctor is approved
+	const isDoctorApproved =
+		userRole !== "DOCTOR" || profileCompletion?.isApproved;
 
 	// Simple navigation menu based on user role
 	const navigationItems =
@@ -46,26 +56,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						title: "Dashboard",
 						url: cabinetRoutes.DASHBOARD,
 						icon: Home,
+						disabled: false,
 					},
 					{
 						title: "Mes Annonces",
 						url: cabinetRoutes.JOB_OFFERS,
 						icon: FileText,
+						disabled: !isCabinetApproved,
 					},
 					{
 						title: "Candidatures",
 						url: cabinetRoutes.APPLICATIONS,
 						icon: Users,
+						disabled: !isCabinetApproved,
 					},
 					{
 						title: "Messages",
 						url: cabinetRoutes.MESSAGES,
 						icon: MessageCircle,
+						disabled: !isCabinetApproved,
 					},
 					{
 						title: "Mon Profil",
 						url: cabinetRoutes.PROFILE,
 						icon: User,
+						disabled: false,
 					},
 				]
 			: [
@@ -73,26 +88,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						title: "Dashboard",
 						url: doctorRoutes.DASHBOARD,
 						icon: Home,
+						disabled: false,
 					},
 					{
 						title: "Rechercher",
 						url: doctorRoutes.SEARCH,
 						icon: Search,
+						disabled: !isDoctorApproved,
 					},
 					{
 						title: "Mes Candidatures",
 						url: doctorRoutes.APPLICATIONS,
 						icon: Send,
+						disabled: !isDoctorApproved,
 					},
 					{
 						title: "Messages",
 						url: doctorRoutes.MESSAGES,
 						icon: MessageCircle,
+						disabled: !isDoctorApproved,
 					},
 					{
 						title: "Mon Profil",
 						url: doctorRoutes.PROFILE,
 						icon: User,
+						disabled: false,
 					},
 				];
 
@@ -122,14 +142,26 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 					{navigationItems.map((item) => (
 						<SidebarMenuItem key={item.title}>
 							<SidebarMenuButton
-								asChild
+								asChild={!item.disabled}
 								isActive={pathname === item.url}
-								tooltip={item.title}
+								tooltip={
+									item.disabled
+										? "Accès restreint en attente de validation"
+										: item.title
+								}
+								disabled={item.disabled}
 							>
-								<Link href={item.url}>
-									<item.icon className="h-4 w-4" />
-									<span>{item.title}</span>
-								</Link>
+								{item.disabled ? (
+									<div className="flex items-center gap-2 opacity-50">
+										<item.icon className="h-4 w-4" />
+										<span>{item.title}</span>
+									</div>
+								) : (
+									<Link href={item.url}>
+										<item.icon className="h-4 w-4" />
+										<span>{item.title}</span>
+									</Link>
+								)}
 							</SidebarMenuButton>
 						</SidebarMenuItem>
 					))}
