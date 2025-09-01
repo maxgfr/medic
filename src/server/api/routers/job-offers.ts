@@ -11,6 +11,7 @@ import {
 	sql,
 } from "drizzle-orm";
 import { z } from "zod";
+import { calculateDistance } from "~/lib/geo-utils";
 import {
 	jobOfferSchema,
 	jobOfferStatusSchema,
@@ -366,6 +367,13 @@ export const jobOffersRouter = createTRPCRouter({
 			z.object({
 				specialty: z.string().optional(),
 				location: z.string().optional(),
+				locationCoordinates: z
+					.object({
+						lat: z.number(),
+						lng: z.number(),
+					})
+					.optional(),
+				radiusKm: z.number().min(1).max(100).default(20), // Rayon par défaut de 20km
 				type: jobOfferTypeSchema.optional(),
 				startDate: z.date().optional(),
 				endDate: z.date().optional(),
@@ -398,7 +406,26 @@ export const jobOffersRouter = createTRPCRouter({
 				);
 			}
 
-			if (input.location) {
+			// Géolocalisation intelligente
+			if (input.locationCoordinates) {
+				// Si nous avons des coordonnées, utiliser la recherche par distance
+				const { lat, lng } = input.locationCoordinates;
+				const radiusKm = input.radiusKm;
+
+				// Utiliser une requête SQL avec la formule de Haversine pour de meilleures performances
+				whereConditions.push(
+					sql`(
+						6371 * acos(
+							cos(radians(${lat})) * 
+							cos(radians(${jobOffers.latitude})) * 
+							cos(radians(${jobOffers.longitude}) - radians(${lng})) + 
+							sin(radians(${lat})) * 
+							sin(radians(${jobOffers.latitude}))
+						)
+					) <= ${radiusKm}`,
+				);
+			} else if (input.location) {
+				// Fallback : recherche textuelle si pas de coordonnées
 				whereConditions.push(ilike(jobOffers.location, `%${input.location}%`));
 			}
 
@@ -451,7 +478,35 @@ export const jobOffersRouter = createTRPCRouter({
 				},
 			});
 
-			return jobOffersList;
+			// Calculer la distance pour chaque offre si des coordonnées sont fournies
+			const jobOffersWithDistance = jobOffersList.map((offer) => {
+				let distance: number | undefined = undefined;
+
+				if (input.locationCoordinates && offer.latitude && offer.longitude) {
+					distance = calculateDistance(
+						input.locationCoordinates.lat,
+						input.locationCoordinates.lng,
+						offer.latitude,
+						offer.longitude,
+					);
+				}
+
+				return {
+					...offer,
+					distance, // Distance en km
+				};
+			});
+
+			// Trier par distance si des coordonnées sont fournies
+			if (input.locationCoordinates) {
+				jobOffersWithDistance.sort((a, b) => {
+					if (a.distance === undefined) return 1;
+					if (b.distance === undefined) return -1;
+					return a.distance - b.distance;
+				});
+			}
+
+			return jobOffersWithDistance;
 		}),
 
 	// Update job offer status (Cabinet only)

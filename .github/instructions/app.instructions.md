@@ -22,6 +22,7 @@ A Next.js medical application with PostgreSQL database.
 - `bun run check` - Run Biome linter/formatter
 - `bun run check:write` - Run Biome with auto-fix
 - `bun run preview` - Build and start locally
+- `bun run test` - Run tests with Bun
 
 ## Database Commands
 

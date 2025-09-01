@@ -53,6 +53,7 @@ type JobOfferSearchResult = {
 	equipment: string[] | null;
 	status: string;
 	createdAt: Date;
+	distance?: number; // Distance en km depuis la recherche
 	cabinet: {
 		cabinetName: string;
 		user: {
@@ -67,9 +68,11 @@ export default function DoctorJobOffersPage() {
 	const [filters, setFilters] = useState({
 		specialty: "all",
 		location: "",
+		locationCoordinates: null as { lat: number; lng: number } | null,
 		type: "all",
 		housingProvided: "all",
 		minRetrocession: "",
+		radiusKm: 20, // Rayon par défaut de 20km
 	});
 
 	// Pagination state
@@ -93,6 +96,8 @@ export default function DoctorJobOffersPage() {
 				? filters.specialty
 				: undefined,
 		location: filters.location || undefined,
+		locationCoordinates: filters.locationCoordinates || undefined,
+		radiusKm: filters.radiusKm,
 		type:
 			filters.type && filters.type !== "all"
 				? (filters.type as "URGENT" | "PLANNED" | "RECURRING")
@@ -130,11 +135,65 @@ export default function DoctorJobOffersPage() {
 		setFilters({
 			specialty: "all",
 			location: "",
+			locationCoordinates: null,
 			type: "all",
 			housingProvided: "all",
 			minRetrocession: "",
+			radiusKm: 20,
 		});
 		setPage(1);
+	};
+
+	// Fonction pour géocoder une localisation et obtenir ses coordonnées
+	const geocodeLocation = async (location: string) => {
+		if (!location.trim()) {
+			setFilters((prev) => ({ ...prev, locationCoordinates: null }));
+			return;
+		}
+
+		try {
+			const response = await fetch(
+				`/api/google-maps/geocode?input=${encodeURIComponent(location)}`,
+			);
+
+			if (response.ok) {
+				const data = await response.json();
+
+				// Importer dynamiquement les fonctions geo-utils
+				const { getSmartRadiusFromGeocodingResult } = await import(
+					"~/lib/geo-utils"
+				);
+
+				// Calculer le rayon intelligent basé sur les métadonnées Google
+				const smartRadius = getSmartRadiusFromGeocodingResult(
+					data.geocodingResult,
+					filters.radiusKm,
+				);
+
+				setFilters((prev) => ({
+					...prev,
+					locationCoordinates: {
+						lat: data.coordinates.lat,
+						lng: data.coordinates.lng,
+					},
+					// Mettre à jour le rayon si nécessaire
+					radiusKm: smartRadius,
+				}));
+
+				// Informer l'utilisateur si le rayon a été ajusté
+				if (smartRadius !== filters.radiusKm) {
+					toast.info(
+						`Rayon ajusté automatiquement à ${smartRadius}km pour couvrir toute la zone`,
+					);
+				}
+			} else {
+				// En cas d'échec du géocodage, on garde la recherche textuelle
+				setFilters((prev) => ({ ...prev, locationCoordinates: null }));
+			}
+		} catch (error) {
+			console.error("Erreur de géocodage:", error);
+			setFilters((prev) => ({ ...prev, locationCoordinates: null }));
+		}
 	};
 
 	const getTypeColor = (type: string) => {
@@ -242,15 +301,54 @@ export default function DoctorJobOffersPage() {
 										id="location"
 										placeholder="Ville, région..."
 										value={filters.location}
-										onChange={(e) =>
+										onChange={(e) => {
+											const newLocation = e.target.value;
 											setFilters((prev) => ({
 												...prev,
-												location: e.target.value,
-											}))
-										}
+												location: newLocation,
+											}));
+
+											// Géocoder la nouvelle localisation après un délai
+											if (newLocation.length >= 3) {
+												setTimeout(() => geocodeLocation(newLocation), 500);
+											} else {
+												setFilters((prev) => ({
+													...prev,
+													locationCoordinates: null,
+												}));
+											}
+										}}
 										className="pl-10"
 									/>
 								</div>
+								{filters.locationCoordinates && (
+									<p className="text-muted-foreground text-xs">
+										📍 Recherche géographique activée (rayon: {filters.radiusKm}
+										km)
+									</p>
+								)}
+							</div>
+
+							{/* Radius Control */}
+							<div className="space-y-2">
+								<Label htmlFor="radius">Rayon de recherche</Label>
+								<Select
+									value={filters.radiusKm.toString()}
+									onValueChange={(value) =>
+										setFilters((prev) => ({ ...prev, radiusKm: Number(value) }))
+									}
+								>
+									<SelectTrigger>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="5">5 km</SelectItem>
+										<SelectItem value="10">10 km</SelectItem>
+										<SelectItem value="20">20 km</SelectItem>
+										<SelectItem value="50">50 km</SelectItem>
+										<SelectItem value="100">100 km</SelectItem>
+									</SelectContent>
+								</Select>
 							</div>
 
 							{/* Type */}
@@ -384,6 +482,11 @@ export default function DoctorJobOffersPage() {
 													<div className="mb-2 flex items-center gap-2 text-muted-foreground text-sm">
 														<MapPin className="h-4 w-4" />
 														{offer.location}
+														{offer.distance && (
+															<span className="ml-2 rounded-full bg-blue-100 px-2 py-1 text-blue-700 text-xs">
+																{offer.distance.toFixed(1)} km
+															</span>
+														)}
 													</div>
 												</div>
 												<Badge variant={getTypeColor(offer.type)}>

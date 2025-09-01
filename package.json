@@ -17,6 +17,9 @@
 		"dev": "next dev --turbo",
 		"preview": "next build && next start",
 		"start": "next start",
+		"test": "bun test",
+		"test:watch": "bun test --watch",
+		"test:geo": "bun test src/lib/tests/geo-utils.test.ts",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
@@ -65,6 +68,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"@tailwindcss/postcss": "^4.0.15",
+		"@types/bun": "^1.2.21",
 		"@types/jsonwebtoken": "^9.0.10",
 		"@types/node": "^20.14.10",
 		"@types/react": "^19.0.0",
